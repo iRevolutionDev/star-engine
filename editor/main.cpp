@@ -1,4 +1,4 @@
-#include "core/common.hpp"
+#include "star/core/common.hpp"
 
 #ifdef STAR_PLATFORM_WINDOWS
 #include <Windows.h>
