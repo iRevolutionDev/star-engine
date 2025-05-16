@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.29)
 
-file(GLOB_RECURSE EDITOR_SRC_FILES 
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
+
+file(GLOB_RECURSE EDITOR_SRC_FILES
+    "${SRC_DIR}/**.cpp"
+    "${SRC_DIR}/**.hpp"
+    "${SRC_DIR}/**.h"
 )
 
 set(EDITOR_NAME "${PROJECT_NAME}_editor")
