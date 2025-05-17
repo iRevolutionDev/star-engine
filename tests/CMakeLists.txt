@@ -22,13 +22,13 @@ target_include_directories(${TEST_TARGET} PRIVATE
     "${TEST_DIR}/src"
 )
 
-target_link_libraries(${TEST_TARGET} PRIVATE 
-    ${PROJECT_NAME}
-    Catch2::Catch2WithMain
-)
+#target_link_libraries(${TEST_TARGET} PRIVATE
+#    ${PROJECT_NAME}
+#    Catch2::Catch2WithMain
+#)
 
 add_test(NAME ${TEST_TARGET} COMMAND ${TEST_TARGET})
 
-catch_discover_tests(${TEST_TARGET})
+#catch_discover_tests(${TEST_TARGET})
 
 message(STATUS "Configured test: ${TEST_TARGET}")

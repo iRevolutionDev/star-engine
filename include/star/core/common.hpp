@@ -5,7 +5,12 @@
 
 #ifdef _WIN32
     #define NOMINMAX
-    #include <sdkddkver.h>
+    // Try to include the system sdkddkver.h first, fallback to our custom one
+    #if __has_include(<sdkddkver.h>)
+        #include <sdkddkver.h>
+    #else
+        #include "sdkddkver.h"
+    #endif
     #include <winsock2.h>
     #include <windows.h>
     #define STAR_PLATFORM_WINDOWS
@@ -78,6 +83,7 @@
 #include <bx/bx.h>
 #include <bx/math.h>
 #include <bgfx/embedded_shader.h>
+#include <bx/timer.h>
 
 // SDL3
 #include <SDL3/SDL.h>

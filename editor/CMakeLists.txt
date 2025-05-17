@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.29)
 
-set(SRC_DIR "${PROJECT_SOURCE_DIR}/src")
+set(SRC_DIR "${PROJECT_SOURCE_DIR}/editor/src")
 
 file(GLOB_RECURSE EDITOR_SRC_FILES
     "${SRC_DIR}/**.cpp"
