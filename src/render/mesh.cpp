@@ -83,7 +83,7 @@ namespace star {
 
         float hs = size * 0.5f;
 
-        glm::vec3 corners[8] = {
+        const glm::vec3 corners[8] = {
             {-hs, -hs, -hs},
             {hs, -hs, -hs},
             {hs, hs, -hs},
@@ -94,7 +94,7 @@ namespace star {
             {-hs, hs, hs}
         };
 
-        glm::vec3 normals[6] = {
+        const glm::vec3 normals[6] = {
             {0.0f, 0.0f, -1.0f},
             {0.0f, 0.0f, 1.0f},
             {-1.0f, 0.0f, 0.0f},
@@ -110,7 +110,7 @@ namespace star {
             {0.0f, 0.0f}
         };
 
-        glm::vec4 color(1.0f, 1.0f, 1.0f, 1.0f);
+        constexpr glm::vec4 color(1.0f, 1.0f, 1.0f, 1.0f);
 
         vertices.push_back({corners[0], normals[0], texcoords[0], color}); // 0
         vertices.push_back({corners[1], normals[0], texcoords[1], color}); // 1
@@ -332,9 +332,6 @@ namespace star {
 
         if (bgfx::isValid(_ibh)) {
             encoder->setIndexBuffer(_ibh);
-            encoder->submit(0, bgfx::ProgramHandle{BGFX_INVALID_HANDLE});
-        } else {
-            encoder->submit(0, bgfx::ProgramHandle{BGFX_INVALID_HANDLE}, 0, _vertex_count);
         }
     }
 

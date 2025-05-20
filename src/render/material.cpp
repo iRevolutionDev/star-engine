@@ -1,7 +1,8 @@
+#include "star/core/common.hpp"
 #include "star/render/material.hpp"
+#include "star/graphics/shaders.hpp"
 
 #include <ranges>
-#include <spdlog/spdlog.h>
 
 namespace star {
     ShaderUniform::ShaderUniform(const std::string &uniform_name, bgfx::UniformType::Enum uniform_type, uint16_t count)
@@ -104,9 +105,9 @@ namespace star {
     }
 
     Shader::Shader(Shader &&other) noexcept
-        : _program(other._program)
-          , _uniforms(std::move(other._uniforms))
-          , _samplers(std::move(other._samplers)) {
+        : _uniforms(std::move(other._uniforms))
+          , _samplers(std::move(other._samplers))
+          , _program(other._program) {
         other._program = BGFX_INVALID_HANDLE;
     }
 
@@ -151,9 +152,27 @@ namespace star {
         return true;
     }
 
-    bool Shader::load(const std::string &vs_name, const std::string &fs_name) {
-        spdlog::error("Shader::load by name not implemented yet: {} + {}", vs_name, fs_name);
-        return false;
+    bool Shader::load(const bgfx::EmbeddedShader &vs, const bgfx::EmbeddedShader &fs) {
+        destroy();
+
+        const bgfx::ShaderHandle vsh = bgfx::createEmbeddedShader(&vs, bgfx::getRendererType(), vs.name);
+        const bgfx::ShaderHandle fsh = bgfx::createEmbeddedShader(&fs, bgfx::getRendererType(), fs.name);
+
+        if (!bgfx::isValid(vsh) || !bgfx::isValid(fsh)) {
+            spdlog::error("Shader::load - Failed to create embedded shader handles");
+            return false;
+        }
+
+        _program = bgfx::createProgram(vsh, fsh, true);
+
+        if (!is_valid()) {
+            spdlog::error("Shader::load - Failed to create embedded shader program");
+            return false;
+        }
+
+        init_uniforms();
+
+        return true;
     }
 
     bool Shader::is_valid() const {
@@ -252,7 +271,7 @@ namespace star {
     }
 
     bool Material::set_uniform(const std::string &name, const glm::vec4 &value) {
-        ShaderUniform *uniform = _shader.get_uniform(name);
+        const ShaderUniform *uniform = _shader.get_uniform(name);
         if (!uniform || uniform->type != bgfx::UniformType::Vec4) {
             return false;
         }
@@ -328,6 +347,7 @@ namespace star {
 
     void Material::bind(bgfx::Encoder *encoder, uint8_t view_id) const {
         if (!_shader.is_valid()) {
+            spdlog::warn("Material::bind - Invalid shader");
             return;
         }
 
@@ -413,6 +433,7 @@ namespace star {
     }
 
     UnlitMaterial::UnlitMaterial() {
+        _shader.load(k_simple_vs, k_simple_fs);
     }
 
     UnlitMaterial::~UnlitMaterial() = default;

@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <spdlog/spdlog.h>
 
+#include "star/render/material.hpp"
+#include "star/render/renderer_components.hpp"
+#include "star/scene/transform.hpp"
+
 namespace star {
     ForwardRenderer::ForwardRenderer() = default;
 
@@ -53,18 +57,18 @@ namespace star {
             return;
         }
 
-        if (view_id != UINT16_MAX) {
-            _view_id = view_id;
-        }
+        bgfx::ViewId currentViewId = (view_id != UINT16_MAX) ? view_id : _view_id;
 
         bgfx::Encoder *enc = encoder;
+        bool created_encoder = false;
         if (enc == nullptr) {
             enc = bgfx::begin();
+            created_encoder = true;
         }
 
         render_scene(enc);
 
-        if (encoder == nullptr) {
+        if (created_encoder) {
             bgfx::end(enc);
         }
     }
@@ -103,9 +107,56 @@ namespace star {
     }
 
     void ForwardRenderer::collect_render_items() {
+        if (!_scene) return;
+
+        auto view = _scene->get_registry().view<MeshRenderer, Transform>();
+
+        for (auto entity: view) {
+            const auto &mesh_renderer = view.get<MeshRenderer>(entity);
+            const auto &transform = view.get<Transform>(entity);
+
+            if (!mesh_renderer.is_visible()) continue;
+
+            auto *mesh = mesh_renderer.get_mesh();
+            auto *material = mesh_renderer.get_material();
+
+            if (!mesh || !mesh->is_valid() || !material) continue;
+
+            RenderItem item;
+            item.entity = entity;
+            item.mesh = mesh;
+            item.material = material;
+            item.model_matrix = transform.get_model_matrix();
+            item.normal_matrix = glm::transpose(glm::inverse(glm::mat3(item.model_matrix)));
+            item.sort_key = mesh_renderer.generate_sort_key();
+            if (_camera_entity != entt::null && _scene->get_registry().valid(_camera_entity)) {
+                if (const auto *camera_transform = _scene->get_registry().try_get<Transform>(_camera_entity)) {
+                    const glm::vec3 camera_pos = camera_transform->get_position();
+                    const glm::vec3 object_pos = transform.get_position();
+                    item.distance = glm::distance(camera_pos, object_pos);
+                }
+            }
+
+            _render_items.push_back(item);
+        }
     }
 
     void ForwardRenderer::collect_lights() {
+        if (!_scene) return;
+
+        auto view = _scene->get_registry().view<Light, Transform>();
+
+        for (auto entity: view) {
+            const auto &light = view.get<Light>(entity);
+
+            if (!light.is_enabled()) continue;
+
+            _light_entities.push_back(Entity(entity));
+
+            if (_light_entities.size() >= _max_lights) {
+                break;
+            }
+        }
     }
 
     void ForwardRenderer::sort_render_items() {
@@ -128,6 +179,10 @@ namespace star {
     }
 
     void ForwardRenderer::render_mesh(RenderItem &item, bgfx::Encoder *encoder) {
+        if (!item.mesh || !item.material) return;
+        bgfx::setTransform(&item.model_matrix[0][0]);
+        item.material->bind(encoder, _view_id);
+        item.mesh->draw(encoder);
     }
 
     ForwardRendererComponent::ForwardRendererComponent()
@@ -156,6 +211,7 @@ namespace star {
 
     void ForwardRendererComponent::render() {
         if (!_renderer || !_camera) return;
+        _renderer->set_camera(_camera->get_entity());
 
         _renderer->render(_view_id);
     }

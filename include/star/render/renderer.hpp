@@ -2,13 +2,9 @@
 
 #include "star/export.hpp"
 #include "star/render/render_fwd.hpp"
-#include "star/scene/entity.hpp"
 #include "star/scene/camera.hpp"
 #include <bgfx/bgfx.h>
-#include <glm/glm.hpp>
 #include <string>
-#include <memory>
-#include <vector>
 
 namespace star {
     class App;
@@ -74,7 +70,7 @@ namespace star {
     protected:
         Scene *_scene{nullptr};
         App *_app{nullptr};
-        Entity _camera_entity{Entity::INVALID_ID};
+        Entity _camera_entity{};
         bool _visible{true};
         bool _debug_enabled{false};
         bgfx::ViewId _view_id{0};

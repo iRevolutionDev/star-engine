@@ -3,10 +3,16 @@
 #include "star/export.hpp"
 #include "star/app/app_fwd.hpp"
 #include "star/app/app_component.hpp"
+#include "star/app/input.hpp"
+#include "star/app/window.hpp"
 
 #include "star/core/math.hpp"
 
 #include "bgfx/bgfx.h"
+#include <vector>
+#include <memory>
+#include <thread>
+#include <chrono>
 
 #if defined(_WIN32)
 #include <Windows.h>
@@ -51,12 +57,84 @@ namespace star {
         virtual ~IAppUpdater() = default;
 
         virtual void update(float delta_time) = 0;
-    };
-
-    template<typename T>
+    };    template<typename T>
     class STAR_EXPORT ITypeAppUpdater : public IAppUpdater {
     public:
         static constexpr auto type_name() { return typeid(T).name(); }
+    };
+
+    struct VideoMode;
+    class KeyboardModifiers;
+    enum class KeyboardKey;
+
+    class STAR_EXPORT AppImpl final : public ITypeKeyboardListener<AppImpl> {
+    public:
+        explicit AppImpl(App& app);
+        ~AppImpl() override;
+
+        int32_t run(const CmdArgs& args);
+        void request_render_reset();
+        void request_renderer_type(bgfx::RendererType::Enum renderer);
+        void request_quit();
+        bool is_running() const;
+        void set_debug_flag(uint32_t flag, bool enabled);
+        bool get_debug_flag(uint32_t flag) const;
+        void set_paused(bool paused);
+        bool is_paused() const;
+        void set_update_config(const AppUpdateConfig& config);
+        const AppUpdateConfig& get_update_config() const;
+        void set_clear_color(const glm::vec4& color);
+        const glm::vec4& get_clear_color() const;
+        void add_component(std::shared_ptr<IAppComponent>&& component);
+        bool remove_component(size_t type_hash);
+        bool has_component(size_t type_hash) const;
+        IAppComponent* get_component(size_t type_hash);
+        const IAppComponent* get_component(size_t type_hash) const;
+        void set_delegate(std::unique_ptr<IAppDelegate> delegate);
+        Input& get_input();
+        const Input& get_input() const;
+        Window& get_window();
+        const Window& get_window() const;
+        void add_updater(std::unique_ptr<IAppUpdater>&& updater);
+        void add_updater(IAppUpdater& updater);
+        bool remove_updater(size_t type_hash);
+
+    protected:
+        void on_keyboard_key(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
+
+    private:
+        using Components = std::vector<std::shared_ptr<IAppComponent>>;
+        using Updaters = std::vector<std::unique_ptr<IAppUpdater>>;
+
+        bool initialize(const CmdArgs& args);
+        void shutdown();
+        void render_frame();
+        void update_frame(float delta_time);
+        void process_events();
+        void render_reset();
+        float update_time_passed() const;
+        void bgfx_init() const;
+        void handle_debug_shortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
+
+        App& _app;
+        std::unique_ptr<Window> _window;
+        std::unique_ptr<Input> _input;
+        bool _running{false};
+        bool _paused{false};
+        bool _render_reset{false};
+        glm::uvec2 _render_size{1280, 720};
+        VideoMode _video_mode;
+        uint32_t _debug_flags{0};
+        uint32_t _reset_flags{0};
+        bgfx::RendererType::Enum _renderer_type{bgfx::RendererType::Count};
+        uint32_t _active_reset_flags{0};
+        glm::vec4 _clear_color{0.0f, 0.0f, 0.0f, 1.0f};
+        uint64_t _last_update{0};
+        AppUpdateConfig _update_config;
+        std::unique_ptr<IAppDelegate> _delegate;
+        Components _components;
+        Updaters _updaters;
+        std::vector<std::reference_wrapper<IAppUpdater>> _updater_refs;
     };
 
     class STAR_EXPORT App {
@@ -93,13 +171,13 @@ namespace star {
 
         template<typename T, typename... Args>
         T &add_component(Args &&... args) {
-            static_assert(std::is_base_of<IAppComponent, T>::value, "T must be derived from IAppComponent");
+            static_assert(std::is_base_of_v<IAppComponent, T>, "T must be derived from IAppComponent");
             return *static_cast<T *>(add_component_impl(std::make_unique<T>(std::forward<Args>(args)...)).get());
         }
 
         template<typename T>
         T &get_or_add_component() {
-            static_assert(std::is_base_of<IAppComponent, T>::value, "T must be derived from IAppComponent");
+            static_assert(std::is_base_of_v<IAppComponent, T>, "T must be derived from IAppComponent");
             auto component = get_component<T>();
             if (component) {
                 return *component;
@@ -137,6 +215,8 @@ namespace star {
         bool remove_updater() {
             return remove_updater_impl(typeid(T).hash_code());
         }
+
+        void set_delegate(std::unique_ptr<IAppDelegate> delegate) const;
 
     private:
         std::shared_ptr<IAppComponent> add_component_impl(std::unique_ptr<IAppComponent> &&component) const;

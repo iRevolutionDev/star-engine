@@ -2,13 +2,14 @@
 
 #include "star/export.hpp"
 #include "star/app/app_fwd.hpp"
-#include "entity.hpp"
+#include "entity_registry.hpp"
 #include "star/app/app_component.hpp"
+
+struct Args;
 
 namespace star {
     class Scene;
     class Transform;
-    class Entity;
 
     class ISceneComponent;
     class ISceneDelegate;
@@ -58,6 +59,65 @@ namespace star {
         }
     };
 
+    class SceneImpl {
+    public:
+        explicit SceneImpl(Scene &scene);
+
+        ~SceneImpl();
+
+        void init(App &app);
+
+        void shutdown();
+
+        void update(float delta_time);
+
+        bgfx::ViewId render_reset(bgfx::ViewId view_id);
+
+        void set_paused(bool paused);
+
+        bool is_paused() const;
+
+        void set_name(const std::string &name);
+
+        const std::string &get_name() const;
+
+        void add_scene_component(std::unique_ptr<ISceneComponent> &&component);
+
+        ISceneComponent *get_scene_component(size_t type_hash);
+
+        bool remove_scene_component(size_t type_hash);
+
+        Entity create_entity();
+
+        void destroy_entity(Entity entity);
+
+        bool is_valid_entity(Entity entity) const;
+
+        void set_delegate(ISceneDelegate *delegate);
+
+        ISceneDelegate *get_delegate() const;
+
+        EntityRegistry &get_registry();
+
+        const EntityRegistry &get_registry() const;
+
+        void set_view_id(bgfx::ViewId view_id);
+
+        bgfx::ViewId get_view_id() const;
+
+        std::string to_string() const;
+
+    private:
+        Scene &_scene;
+        App *_app{nullptr};
+        std::string _name;
+        bool _paused{false};
+        ISceneDelegate *_delegate{nullptr};
+        EntityRegistry _registry;
+        std::vector<std::unique_ptr<ISceneComponent> > _components;
+        bgfx::ViewId _view_id{0};
+    };
+
     class STAR_EXPORT Scene {
     public:
         Scene();
@@ -84,9 +144,9 @@ namespace star {
         T &add_scene_component(Args &&... args) {
             static_assert(std::is_base_of_v<ISceneComponent, T>, "T must be derived from ISceneComponent");
             auto component = std::make_unique<T>(std::forward<Args>(args)...);
-            T &ref = *component;
+            T *component_ptr = component.get();
             add_scene_component_impl(std::move(component));
-            return ref;
+            return *component_ptr;
         }
 
         template<typename T>
@@ -105,19 +165,32 @@ namespace star {
 
         bool is_valid_entity(Entity entity) const;
 
-        void set_delegate(ISceneDelegate *delegate);        ISceneDelegate *get_delegate() const;
+        void set_delegate(ISceneDelegate *delegate);
+
+        EntityRegistry &get_registry();
+
+        ISceneDelegate *get_delegate() const;
 
         template<typename T, typename... Args>
-        T &add_component(Entity entity, Args &&... args);
+        T &add_component(Entity entity, Args &&... args) {
+            return _impl->get_registry().emplace<T>(entity, std::forward<Args>(args)...);
+        }
 
         template<typename T>
-        T *get_component(Entity entity);
+        T *get_component(const Entity entity) {
+            return _impl->get_registry().try_get<T>(entity);
+        }
 
         template<typename T>
-        bool remove_component(Entity entity) const;
+        bool remove_component(Entity entity) const {
+            return _impl->get_registry().remove<T>(entity);
+        }
 
         template<typename T>
-        bool has_component(Entity entity) const;
+        bool has_component(Entity entity) const {
+            return _impl->get_registry().any_of<T>(entity);
+        }
+
     private:
         void add_scene_component_impl(std::unique_ptr<ISceneComponent> &&component);
 
@@ -125,15 +198,14 @@ namespace star {
 
         bool remove_scene_component_impl(size_t type_hash);
 
-        class SceneImpl;
         std::unique_ptr<SceneImpl> _impl;
     };
 
-    class STAR_EXPORT SceneAppComponent : public ITypeAppComponent<SceneAppComponent>, public ISceneDelegate {
+    class STAR_EXPORT SceneAppComponent final : public ITypeAppComponent<SceneAppComponent>, public ISceneDelegate {
     public:
         SceneAppComponent();
 
-        ~SceneAppComponent();
+        ~SceneAppComponent() override;
 
         void init(App &app) override;
 

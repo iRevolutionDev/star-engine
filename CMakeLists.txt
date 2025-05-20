@@ -14,6 +14,7 @@ include(scripts/bgfx.cmake)
 include(scripts/sdl3.cmake)
 include(scripts/spdlog.cmake)
 include(scripts/glm.cmake)
+include(scripts/entt.cmake)
 
 # Project Files
 file(GLOB_RECURSE ENGINE_SRC_FILES
@@ -97,6 +98,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${SDL3_INCLUDE_DIR}"
         "${glm_SOURCE_DIR}"
         "${spdlog_SOURCE_DIR}"
+        "${entt_SOURCE_DIR}/src"
         "${CMAKE_BINARY_DIR}/include/generated/shaders"
 )
 
@@ -123,14 +125,14 @@ if (MSVC AND WIN32 AND NOT MSVC_VERSION VERSION_LESS 142)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:/ZI>)
 endif ()
 
-if(EXISTS "${EDITOR_DIR}/CMakeLists.txt")
+if (EXISTS "${EDITOR_DIR}/CMakeLists.txt")
     add_subdirectory(${EDITOR_DIR})
-endif()
+endif ()
 
-if(EXISTS "${SAMPLES_DIR}/CMakeLists.txt")
+if (EXISTS "${SAMPLES_DIR}/CMakeLists.txt")
     add_subdirectory(${SAMPLES_DIR})
-endif()
+endif ()
 
-if(EXISTS "${TEST_DIR}/CMakeLists.txt")
+if (EXISTS "${TEST_DIR}/CMakeLists.txt")
     add_subdirectory(${TEST_DIR})
-endif()
+endif ()

@@ -91,6 +91,8 @@ namespace star {
     class STAR_EXPORT ITypeKeyboardListener : public IKeyboardListener {
     public:
         static constexpr auto type_name() { return typeid(T).name(); }
+        virtual ~ITypeKeyboardListener() = default;
+        virtual void on_keyboard_key(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) = 0;
     };
 
     class STAR_EXPORT IMouseListener {

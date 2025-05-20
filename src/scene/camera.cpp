@@ -10,135 +10,48 @@
 #include "star/app/window.hpp"
 
 namespace star {
-    class Camera::CameraImpl {
-    public:
-        CameraImpl();
+    CameraImpl::CameraImpl(Camera &camera, const glm::mat4 &projection_matrix) noexcept
+        : _camera(camera),
+          _projection_matrix(projection_matrix) {
+    }
 
-        ~CameraImpl();
-
-        void init(Camera &camera, Scene &scene, App &app);
-
-        void shutdown();
-
-        glm::mat4 get_view_matrix() const;
-
-        glm::mat4 get_projection_matrix() const;
-
-        ProjectionType get_projection_type() const { return _projection_type; }
-
-        void set_perspective(float fov_degrees, float near_clip, float far_clip);
-
-        void set_ortho(const glm::vec2 &size, float near_clip, float far_clip);
-
-        void set_viewport(const glm::vec4 &viewport);
-
-        const glm::vec4 &get_viewport() const { return _viewport; }
-
-        void set_clear_color(const glm::vec4 &color);
-
-        const glm::vec4 &get_clear_color() const { return _clear_color; }
-
-        void set_clear_flags(uint16_t flags);
-
-        uint16_t get_clear_flags() const { return _clear_flags; }
-
-        bgfx::ViewId render_reset(bgfx::ViewId view_id);
-
-        void render();
-
-        void add_component(std::unique_ptr<ICameraComponent> &&component);
-
-        ICameraComponent *get_component(size_t type_hash);
-
-        bool remove_component(size_t type_hash);
-
-        void set_culling_filter(std::unique_ptr<ICullingFilter> &&filter);
-
-        const ICullingFilter *get_culling_filter() const;
-
-        glm::vec3 screen_to_world_point(const glm::vec2 &screen_pos, float depth) const;
-
-        glm::vec2 world_to_screen_point(const glm::vec3 &world_pos) const;
-
-        glm::vec3 screen_to_viewport_point(const glm::vec2 &screen_pos) const;
-
-        glm::vec2 viewport_to_screen_point(const glm::vec3 &viewport_pos) const;
-
-        Camera::Ray screen_point_to_ray(const glm::vec2 &screen_pos) const;
-
-    private:
-        void update_matrices() const;
-
-        Camera *_camera{nullptr};
-        Scene *_scene{nullptr};
-        App *_app{nullptr};
-        Entity _entity{Entity::INVALID_ID};
-
-        ProjectionType _projection_type{ProjectionType::Perspective};
-        float _fov{60.0f};
-        float _near_clip{0.1f};
-        float _far_clip{1000.0f};
-        glm::vec2 _ortho_size{10.0f, 10.0f};
-
-        glm::vec4 _viewport{0.0f, 0.0f, 1.0f, 1.0f};
-        glm::vec4 _clear_color{0.2f, 0.2f, 0.2f, 1.0f};
-        uint16_t _clear_flags{BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH};
-
-        std::vector<std::unique_ptr<ICameraComponent> > _components;
-
-        std::unique_ptr<ICullingFilter> _culling_filter;
-
-        mutable bool _matrices_dirty{true};
-        mutable glm::mat4 _view_matrix{1.0f};
-        mutable glm::mat4 _projection_matrix{1.0f};
-
-        bgfx::ViewId _view_id{0};
-    };
-
-    Camera::CameraImpl::CameraImpl() = default;
-
-    Camera::CameraImpl::~CameraImpl() {
+    CameraImpl::~CameraImpl() {
         shutdown();
     }
 
-    void Camera::CameraImpl::init(Camera &camera, Scene &scene, App &app) {
-        _camera = &camera;
+    void CameraImpl::init(Scene &scene, App &app) {
         _scene = &scene;
         _app = &app;
 
-        _entity = Entity::INVALID_ID;
-
         for (const auto &component: _components) {
-            component->init(camera, scene, app);
+            component->init(_camera, scene, app);
         }
     }
 
-    void Camera::CameraImpl::shutdown() {
+    void CameraImpl::shutdown() {
         for (auto it = _components.rbegin(); it != _components.rend(); ++it) {
             (*it)->shutdown();
         }
 
-        _camera = nullptr;
         _scene = nullptr;
         _app = nullptr;
-        _entity = Entity::INVALID_ID;
     }
 
-    glm::mat4 Camera::CameraImpl::get_view_matrix() const {
+    glm::mat4 CameraImpl::get_view_matrix() const {
         if (_matrices_dirty) {
             update_matrices();
         }
         return _view_matrix;
     }
 
-    glm::mat4 Camera::CameraImpl::get_projection_matrix() const {
+    glm::mat4 CameraImpl::get_projection_matrix() const {
         if (_matrices_dirty) {
             update_matrices();
         }
         return _projection_matrix;
     }
 
-    void Camera::CameraImpl::set_perspective(float fov_degrees, float near_clip, float far_clip) {
+    void CameraImpl::set_perspective(float fov_degrees, float near_clip, float far_clip) {
         _projection_type = ProjectionType::Perspective;
         _fov = fov_degrees;
         _near_clip = near_clip;
@@ -146,7 +59,7 @@ namespace star {
         _matrices_dirty = true;
     }
 
-    void Camera::CameraImpl::set_ortho(const glm::vec2 &size, float near_clip, float far_clip) {
+    void CameraImpl::set_ortho(const glm::vec2 &size, float near_clip, float far_clip) {
         _projection_type = ProjectionType::Orthographic;
         _ortho_size = size;
         _near_clip = near_clip;
@@ -154,20 +67,20 @@ namespace star {
         _matrices_dirty = true;
     }
 
-    void Camera::CameraImpl::set_viewport(const glm::vec4 &viewport) {
+    void CameraImpl::set_viewport(const glm::vec4 &viewport) {
         _viewport = viewport;
         _matrices_dirty = true;
     }
 
-    void Camera::CameraImpl::set_clear_color(const glm::vec4 &color) {
+    void CameraImpl::set_clear_color(const glm::vec4 &color) {
         _clear_color = color;
     }
 
-    void Camera::CameraImpl::set_clear_flags(uint16_t flags) {
+    void CameraImpl::set_clear_flags(uint16_t flags) {
         _clear_flags = flags;
     }
 
-    bgfx::ViewId Camera::CameraImpl::render_reset(bgfx::ViewId view_id) {
+    bgfx::ViewId CameraImpl::render_reset(bgfx::ViewId view_id) {
         _view_id = view_id;
 
         if (_app != nullptr) {
@@ -202,21 +115,21 @@ namespace star {
         return _view_id + 1;
     }
 
-    void Camera::CameraImpl::render() {
+    void CameraImpl::render() const {
         for (const auto &component: _components) {
             component->render();
         }
     }
 
-    void Camera::CameraImpl::add_component(std::unique_ptr<ICameraComponent> &&component) {
-        if (_camera && _scene && _app) {
-            component->init(*_camera, *_scene, *_app);
+    void CameraImpl::add_component(std::unique_ptr<ICameraComponent> &&component) {
+        if (_scene && _app) {
+            component->init(_camera, *_scene, *_app);
         }
 
         _components.push_back(std::move(component));
     }
 
-    ICameraComponent *Camera::CameraImpl::get_component(size_t type_hash) {
+    ICameraComponent *CameraImpl::get_component(size_t type_hash) {
         for (const auto &component: _components) {
             if (component->get_camera_component_type() == type_hash) {
                 return component.get();
@@ -225,14 +138,14 @@ namespace star {
         return nullptr;
     }
 
-    bool Camera::CameraImpl::remove_component(size_t type_hash) {
+    bool CameraImpl::remove_component(size_t type_hash) {
         auto it = std::find_if(_components.begin(), _components.end(),
                                [type_hash](const auto &component) {
                                    return component->get_camera_component_type() == type_hash;
                                });
 
         if (it != _components.end()) {
-            if (_camera && _scene && _app) {
+            if (_scene && _app) {
                 (*it)->shutdown();
             }
             _components.erase(it);
@@ -242,15 +155,15 @@ namespace star {
         return false;
     }
 
-    void Camera::CameraImpl::set_culling_filter(std::unique_ptr<ICullingFilter> &&filter) {
+    void CameraImpl::set_culling_filter(std::unique_ptr<ICullingFilter> &&filter) {
         _culling_filter = std::move(filter);
     }
 
-    const ICullingFilter *Camera::CameraImpl::get_culling_filter() const {
+    const ICullingFilter *CameraImpl::get_culling_filter() const {
         return _culling_filter.get();
     }
 
-    glm::vec3 Camera::CameraImpl::screen_to_world_point(const glm::vec2 &screen_pos, float depth) const {
+    glm::vec3 CameraImpl::screen_to_world_point(const glm::vec2 &screen_pos, float depth) const {
         if (!_app) return glm::vec3(0.0f);
 
         auto &window = _app->get_window();
@@ -275,7 +188,7 @@ namespace star {
         return glm::vec3(world_pos);
     }
 
-    glm::vec2 Camera::CameraImpl::world_to_screen_point(const glm::vec3 &world_pos) const {
+    glm::vec2 CameraImpl::world_to_screen_point(const glm::vec3 &world_pos) const {
         if (!_app) return glm::vec2(0.0f);
 
         auto &window = _app->get_window();
@@ -294,7 +207,7 @@ namespace star {
         return glm::vec2(screen_x, screen_y);
     }
 
-    glm::vec3 Camera::CameraImpl::screen_to_viewport_point(const glm::vec2 &screen_pos) const {
+    glm::vec3 CameraImpl::screen_to_viewport_point(const glm::vec2 &screen_pos) const {
         if (!_app) return glm::vec3(0.0f);
 
         auto &window = _app->get_window();
@@ -309,7 +222,7 @@ namespace star {
         return glm::vec3(vx, vy, 0.0f);
     }
 
-    glm::vec2 Camera::CameraImpl::viewport_to_screen_point(const glm::vec3 &viewport_pos) const {
+    glm::vec2 CameraImpl::viewport_to_screen_point(const glm::vec3 &viewport_pos) const {
         if (!_app) return glm::vec2(0.0f);
 
         auto &window = _app->get_window();
@@ -324,12 +237,12 @@ namespace star {
         return glm::vec2(screen_x, screen_y);
     }
 
-    Camera::Ray Camera::CameraImpl::screen_point_to_ray(const glm::vec2 &screen_pos) const {
-        Camera::Ray ray;
+    Ray CameraImpl::screen_point_to_ray(const glm::vec2 &screen_pos) const {
+        Ray ray;
 
         if (!_app) return ray;
 
-        if (_scene && _entity != Entity::INVALID_ID) {
+        if (_scene && _entity != entt::null) {
             if (const Transform *transform = _scene->get_component<Transform>(_entity)) {
                 ray.origin = transform->get_position();
             }
@@ -343,10 +256,10 @@ namespace star {
         return ray;
     }
 
-    void Camera::CameraImpl::update_matrices() const {
+    void CameraImpl::update_matrices() const {
         if (!_matrices_dirty) return;
 
-        if (_scene && _entity != Entity::INVALID_ID) {
+        if (_scene && _entity != entt::null) {
             Transform *transform = _scene->get_component<Transform>(_entity);
             if (transform) {
                 _view_matrix = glm::inverse(transform->get_model_matrix());
@@ -390,14 +303,10 @@ namespace star {
         _matrices_dirty = false;
     }
 
-    Camera::Camera() : _impl(std::make_unique<CameraImpl>()) {
+    Camera::Camera() : _impl(std::make_unique<CameraImpl>(*this)) {
     }
 
     Camera::~Camera() = default;
-
-    void Camera::init(Scene &scene, App &app) {
-        _impl->init(*this, scene, app);
-    }
 
     void Camera::shutdown() {
         _impl->shutdown();
@@ -457,7 +366,7 @@ namespace star {
         return _impl->render_reset(view_id);
     }
 
-    void Camera::render() {
+    void Camera::render() const {
         _impl->render();
     }
 
@@ -503,8 +412,12 @@ namespace star {
         return _impl->viewport_to_screen_point(viewport_pos);
     }
 
-    Camera::Ray Camera::screen_point_to_ray(const glm::vec2 &screen_pos) const {
+    Ray Camera::screen_point_to_ray(const glm::vec2 &screen_pos) const {
         return _impl->screen_point_to_ray(screen_pos);
+    }
+
+    Entity Camera::get_entity() {
+        return _impl->get_entity();
     }
 
     bool Culling2D::is_visible(const glm::vec3 &position, float radius) const {

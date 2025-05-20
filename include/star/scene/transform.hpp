@@ -1,7 +1,6 @@
 #pragma once
 
 #include "star/export.hpp"
-#include "star/scene/entity.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -62,7 +61,7 @@ namespace star {
         mutable bool _matrix_dirty{true};
         mutable glm::mat4 _model_matrix{1.0f};
 
-        void mark_dirty();
+        void mark_dirty() const;
 
         void update_matrices() const;
     };

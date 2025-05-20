@@ -1,12 +1,8 @@
 #pragma once
 
 #include "star/export.hpp"
-#include <bgfx/bgfx.h>
+#include "bgfx/embedded_shader.h"
 #include <glm/glm.hpp>
-#include <string>
-#include <unordered_map>
-#include <memory>
-#include <vector>
 
 namespace star {
     struct ShaderUniform {
@@ -76,7 +72,7 @@ namespace star {
 
         bool load(const bgfx::Memory *vs_data, const bgfx::Memory *fs_data);
 
-        bool load(const std::string &vs_name, const std::string &fs_name);
+        bool load(const bgfx::EmbeddedShader &vs, const bgfx::EmbeddedShader &fs);
 
         bool is_valid() const;
 

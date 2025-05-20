@@ -7,127 +7,21 @@
 #include <spdlog/spdlog.h>
 
 namespace star {
-    class AppImpl final : public ITypeKeyboardListener<AppImpl> {
-    public:
-        explicit AppImpl(App &app);
-
-        ~AppImpl() override;
-
-        int32_t run(const CmdArgs &args);
-
-        void request_render_reset();
-
-        void request_renderer_type(bgfx::RendererType::Enum renderer);
-
-        void request_quit();
-
-        bool is_running() const;
-
-        void set_debug_flag(uint32_t flag, bool enabled);
-
-        bool get_debug_flag(uint32_t flag) const;
-
-        void set_paused(bool paused);
-
-        bool is_paused() const;
-
-        void set_update_config(const AppUpdateConfig &config);
-
-        const AppUpdateConfig &get_update_config() const;
-
-        void set_clear_color(const glm::vec4 &color);
-
-        const glm::vec4 &get_clear_color() const;
-
-        void add_component(std::shared_ptr<IAppComponent> &&component);
-
-        bool remove_component(size_t type_hash);
-
-        bool has_component(size_t type_hash) const;
-
-        IAppComponent *get_component(size_t type_hash);
-
-        const IAppComponent *get_component(size_t type_hash) const;
-
-        Input &get_input();
-
-        const Input &get_input() const;
-
-        Window &get_window();
-
-        const Window &get_window() const;
-
-        // AssetContext& get_assets();
-        // const AssetContext& get_assets() const;
-
-        void add_updater(std::unique_ptr<IAppUpdater> &&updater);
-
-        void add_updater(IAppUpdater &updater);
-
-        bool remove_updater(size_t type_hash);
-
-    protected:
-        void on_keyboard_key(KeyboardKey key, const KeyboardModifiers &modifiers, bool down) override;
-
-    private:
-        using Components = std::vector<std::shared_ptr<IAppComponent> >;
-        using Updaters = std::vector<std::unique_ptr<IAppUpdater> >;
-
-        bool initialize(const CmdArgs &args);
-
-        void shutdown();
-
-        void render_frame();
-
-        void update_frame(float delta_time);
-
-        void process_events();
-
-        void render_reset();
-
-        float update_time_passed() const;
-
-        void bgfx_init() const;
-
-        void handle_debug_shortcuts(KeyboardKey key, const KeyboardModifiers &modifiers);
-
-        App &_app;
-
-        std::unique_ptr<Window> _window;
-        std::unique_ptr<Input> _input;
-        // std::unique_ptr<AssetContext> _assets;
-
-        bool _running{false};
-        bool _paused{false};
-        bool _render_reset{false};
-        glm::uvec2 _render_size{1280, 720};
-        VideoMode _video_mode;
-        uint32_t _debug_flags{0};
-        uint32_t _reset_flags{0};
-        bgfx::RendererType::Enum _renderer_type{bgfx::RendererType::Count};
-        uint32_t _active_reset_flags{0};
-        glm::vec4 _clear_color{0.0f, 0.0f, 0.0f, 1.0f};
-        uint64_t _last_update{0};
-        AppUpdateConfig _update_config;
-
-        std::unique_ptr<IAppDelegate> _delegate;
-
-        Components _components;
-        Updaters _updaters;
-        std::vector<std::reference_wrapper<IAppUpdater> > _updater_refs;
-    };
-
-    int32_t main(int32_t argc, const char *argv[], std::unique_ptr<IAppDelegateFactory> &&factory) {
+    int32_t main(const int32_t argc, const char *argv[], std::unique_ptr<IAppDelegateFactory> &&factory) {
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD) == 0) {
             spdlog::error("SDL initialization failed: {}", SDL_GetError());
             return 1;
         }
 
-        auto app = std::make_unique<App>();
+        const auto app = std::make_unique<App>();
 
-        CmdArgs args(argv, argc);
+        if (factory) {
+            app->set_delegate(factory->create_delegate(*app));
+        }
 
-        int result = app->run(args);
+        const CmdArgs args(argv, argc);
+
+        const auto result = app->run(args);
 
         SDL_Quit();
         return result;
@@ -181,6 +75,10 @@ namespace star {
             component->init(_app);
         }
 
+        if (_delegate) {
+            _delegate->init();
+        }
+
         return true;
     }
 
@@ -190,6 +88,10 @@ namespace star {
         }
 
         _running = false;
+
+        if (_delegate) {
+            _delegate->shutdown();
+        }
 
         for (auto it = _components.rbegin(); it != _components.rend(); ++it) {
             (*it)->shutdown();
@@ -331,8 +233,8 @@ namespace star {
             return 0.0f;
         }
 
-        float delta_time = static_cast<float>(static_cast<double>(now - _last_update) / static_cast<double>(
-                                                  bx::getHPFrequency()));
+        auto delta_time = static_cast<float>(static_cast<double>(now - _last_update) / static_cast<double>(
+                                                 bx::getHPFrequency()));
 
         delta_time = std::min(delta_time, _update_config.max_frame_time);
 
@@ -400,8 +302,12 @@ namespace star {
         return _clear_color;
     }
 
+    void AppImpl::set_delegate(std::unique_ptr<IAppDelegate> delegate) {
+        _delegate = std::move(delegate);
+    }
+
     void AppImpl::add_component(std::shared_ptr<IAppComponent> &&component) {
-        if (auto type_hash = component->get_type_hash()) {
+        if (const auto type_hash = component->get_type_hash()) {
             remove_component(type_hash);
         }
 
@@ -573,10 +479,15 @@ namespace star {
         return _impl->get_clear_color();
     }
 
+    void App::set_delegate(std::unique_ptr<IAppDelegate> delegate) const {
+        _impl->set_delegate(std::move(delegate));
+    }
+
     std::shared_ptr<IAppComponent> App::add_component_impl(std::unique_ptr<IAppComponent> &&component) const {
         auto shared_component = std::shared_ptr<IAppComponent>(component.release());
+        auto component_copy = shared_component;
         _impl->add_component(std::move(shared_component));
-        return shared_component;
+        return component_copy;
     }
 
     IAppComponent *App::get_component_impl(const size_t type_hash) const {
@@ -608,7 +519,6 @@ namespace star {
     // }
     //
     // const AssetContext& App::get_assets() const {
-    //     return _impl->get_assets();
     // }
 
     void App::add_updater(std::unique_ptr<IAppUpdater> &&updater) const {

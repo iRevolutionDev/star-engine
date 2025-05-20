@@ -9,83 +9,29 @@
 #include "star/render/renderer_components.hpp"
 
 namespace star {
-    class Scene::SceneImpl {
-    public:
-        SceneImpl(Scene &scene);
-
-        ~SceneImpl();
-
-        void init(App &app);
-
-        void shutdown();
-
-        void update(float delta_time);
-
-        bgfx::ViewId render_reset(bgfx::ViewId view_id);
-
-        void set_paused(bool paused);
-
-        bool is_paused() const;
-
-        void set_name(const std::string &name);
-
-        const std::string &get_name() const;
-
-        void add_scene_component(std::unique_ptr<ISceneComponent> &&component);
-
-        ISceneComponent *get_scene_component(size_t type_hash);
-
-        bool remove_scene_component(size_t type_hash);
-
-        Entity create_entity();
-
-        void destroy_entity(Entity entity);
-
-        bool is_valid_entity(Entity entity) const;
-
-        void set_delegate(ISceneDelegate *delegate);
-
-        ISceneDelegate *get_delegate() const;
-
-        EntityRegistry &get_registry();
-
-        const EntityRegistry &get_registry() const;
-
-        void set_view_id(bgfx::ViewId view_id);
-
-        bgfx::ViewId get_view_id() const;
-
-        std::string to_string() const;
-
-    private:
-        Scene &_scene;
-        App *_app{nullptr};
-        std::string _name;
-        bool _paused{false};
-        ISceneDelegate *_delegate{nullptr};
-        EntityRegistry _registry;
-        std::vector<std::unique_ptr<ISceneComponent> > _components;
-        bgfx::ViewId _view_id{0};
-    };
-
-    Scene::SceneImpl::SceneImpl(Scene &scene)
+    SceneImpl::SceneImpl(Scene &scene)
         : _scene(scene)
           , _name("Scene") {
     }
 
-    Scene::SceneImpl::~SceneImpl() {
+    SceneImpl::~SceneImpl() {
         shutdown();
     }
 
-    void Scene::SceneImpl::init(App &app) {
+    void SceneImpl::init(App &app) {
         _app = &app;
 
         for (auto &component: _components) {
             component->init(_scene, app);
         }
+
+        auto &cams = _registry.storage<Camera>();
+        for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr) {
+            itr->get_impl()->init(_scene, app);
+        }
     }
 
-    void Scene::SceneImpl::shutdown() {
+    void SceneImpl::shutdown() {
         if (!_app) {
             return;
         }
@@ -97,7 +43,7 @@ namespace star {
         _app = nullptr;
     }
 
-    void Scene::SceneImpl::update(float delta_time) {
+    void SceneImpl::update(float delta_time) {
         if (_paused) {
             return;
         }
@@ -111,7 +57,7 @@ namespace star {
         }
     }
 
-    bgfx::ViewId Scene::SceneImpl::render_reset(bgfx::ViewId view_id) {
+    bgfx::ViewId SceneImpl::render_reset(bgfx::ViewId view_id) {
         _view_id = view_id;
 
         for (auto &component: _components) {
@@ -121,23 +67,23 @@ namespace star {
         return _view_id;
     }
 
-    void Scene::SceneImpl::set_paused(bool paused) {
+    void SceneImpl::set_paused(bool paused) {
         _paused = paused;
     }
 
-    bool Scene::SceneImpl::is_paused() const {
+    bool SceneImpl::is_paused() const {
         return _paused;
     }
 
-    void Scene::SceneImpl::set_name(const std::string &name) {
+    void SceneImpl::set_name(const std::string &name) {
         _name = name;
     }
 
-    const std::string &Scene::SceneImpl::get_name() const {
+    const std::string &SceneImpl::get_name() const {
         return _name;
     }
 
-    void Scene::SceneImpl::add_scene_component(std::unique_ptr<ISceneComponent> &&component) {
+    void SceneImpl::add_scene_component(std::unique_ptr<ISceneComponent> &&component) {
         if (auto type_hash = component->get_scene_component_type()) {
             remove_scene_component(type_hash);
         }
@@ -149,7 +95,7 @@ namespace star {
         _components.push_back(std::move(component));
     }
 
-    ISceneComponent *Scene::SceneImpl::get_scene_component(size_t type_hash) {
+    ISceneComponent *SceneImpl::get_scene_component(size_t type_hash) {
         for (auto &component: _components) {
             if (component->get_scene_component_type() == type_hash) {
                 return component.get();
@@ -158,7 +104,7 @@ namespace star {
         return nullptr;
     }
 
-    bool Scene::SceneImpl::remove_scene_component(size_t type_hash) {
+    bool SceneImpl::remove_scene_component(size_t type_hash) {
         auto it = std::find_if(_components.begin(), _components.end(),
                                [type_hash](const auto &component) {
                                    return component->get_scene_component_type() == type_hash;
@@ -175,8 +121,8 @@ namespace star {
         return false;
     }
 
-    Entity Scene::SceneImpl::create_entity() {
-        const Entity entity = _registry.create_entity();
+    Entity SceneImpl::create_entity() {
+        const Entity entity = _registry.create();
 
         if (_delegate) {
             _delegate->on_entity_created(entity);
@@ -185,45 +131,45 @@ namespace star {
         return entity;
     }
 
-    void Scene::SceneImpl::destroy_entity(Entity entity) {
-        if (_registry.is_valid(entity)) {
+    void SceneImpl::destroy_entity(Entity entity) {
+        if (_registry.valid(entity)) {
             if (_delegate) {
                 _delegate->on_entity_destroyed(entity);
             }
 
-            _registry.destroy_entity(entity);
+            _registry.destroy(entity);
         }
     }
 
-    bool Scene::SceneImpl::is_valid_entity(Entity entity) const {
-        return _registry.is_valid(entity);
+    bool SceneImpl::is_valid_entity(Entity entity) const {
+        return _registry.valid(entity);
     }
 
-    void Scene::SceneImpl::set_delegate(ISceneDelegate *delegate) {
+    void SceneImpl::set_delegate(ISceneDelegate *delegate) {
         _delegate = delegate;
     }
 
-    ISceneDelegate *Scene::SceneImpl::get_delegate() const {
+    ISceneDelegate *SceneImpl::get_delegate() const {
         return _delegate;
     }
 
-    EntityRegistry &Scene::SceneImpl::get_registry() {
+    EntityRegistry &SceneImpl::get_registry() {
         return _registry;
     }
 
-    const EntityRegistry &Scene::SceneImpl::get_registry() const {
+    const EntityRegistry &SceneImpl::get_registry() const {
         return _registry;
     }
 
-    void Scene::SceneImpl::set_view_id(bgfx::ViewId view_id) {
+    void SceneImpl::set_view_id(bgfx::ViewId view_id) {
         _view_id = view_id;
     }
 
-    bgfx::ViewId Scene::SceneImpl::get_view_id() const {
+    bgfx::ViewId SceneImpl::get_view_id() const {
         return _view_id;
     }
 
-    std::string Scene::SceneImpl::to_string() const {
+    std::string SceneImpl::to_string() const {
         return "Scene(" + _name + ")";
     }
 
@@ -290,46 +236,15 @@ namespace star {
 
     void Scene::set_delegate(ISceneDelegate *delegate) {
         _impl->set_delegate(delegate);
-    }    ISceneDelegate *Scene::get_delegate() const {
+    }
+
+    EntityRegistry &Scene::get_registry() {
+        return _impl->get_registry();
+    }
+
+    ISceneDelegate *Scene::get_delegate() const {
         return _impl->get_delegate();
     }
-
-    template<typename T, typename... Args>
-    T &Scene::add_component(Entity entity, Args &&... args) {
-        return _impl->get_registry().add_component<T>(entity, std::forward<Args>(args)...);
-    }
-
-    template<typename T>
-    T *Scene::get_component(Entity entity) {
-        return _impl->get_registry().get_component<T>(entity);
-    }
-
-    template<typename T>
-    bool Scene::remove_component(Entity entity) const {
-        return _impl->get_registry().remove_component<T>(entity);
-    }
-
-    template<typename T>
-    bool Scene::has_component(Entity entity) const {
-        return _impl->get_registry().has_component<T>(entity);
-    }
-
-    template Transform& Scene::add_component<Transform>(Entity);
-    template Transform* Scene::get_component<Transform>(Entity);
-    template bool Scene::remove_component<Transform>(Entity) const;
-    template bool Scene::has_component<Transform>(Entity) const;
-    template Camera& Scene::add_component<Camera>(Entity);
-    template Camera* Scene::get_component<Camera>(Entity);
-    template bool Scene::remove_component<Camera>(Entity) const;
-    template bool Scene::has_component<Camera>(Entity) const;
-    template MeshRenderer& Scene::add_component<MeshRenderer>(Entity);
-    template MeshRenderer* Scene::get_component<MeshRenderer>(Entity);
-    template bool Scene::remove_component<MeshRenderer>(Entity) const;
-    template bool Scene::has_component<MeshRenderer>(Entity) const;
-    template Light& Scene::add_component<Light>(Entity);
-    template Light* Scene::get_component<Light>(Entity);
-    template bool Scene::remove_component<Light>(Entity) const;
-    template bool Scene::has_component<Light>(Entity) const;
 
     SceneAppComponent::SceneAppComponent()
         : _scene(std::make_unique<Scene>()) {

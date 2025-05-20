@@ -1,13 +1,19 @@
 #pragma once
 
 #include "star/export.hpp"
-#include "star/scene/entity.hpp"
 #include <glm/glm.hpp>
+
+#include "entity_registry.hpp"
 
 namespace star {
     class App;
     class Scene;
     class Transform;
+
+    struct Ray {
+        glm::vec3 origin;
+        glm::vec3 direction;
+    };
 
     class STAR_EXPORT ICameraComponent {
     public:
@@ -65,13 +71,104 @@ namespace star {
         bool is_visible(const glm::vec3 &position, float radius) const override;
     };
 
+    class CameraImpl {
+    public:
+        CameraImpl(Camera &camera, const glm::mat4 &projection_matrix = {}) noexcept;
+
+        ~CameraImpl();
+
+        void init(Scene &scene, App &app);
+
+        void shutdown();
+
+        glm::mat4 get_view_matrix() const;
+
+        glm::mat4 get_projection_matrix() const;
+
+        ProjectionType get_projection_type() const { return _projection_type; }
+
+        void set_perspective(float fov_degrees, float near_clip, float far_clip);
+
+        void set_ortho(const glm::vec2 &size, float near_clip, float far_clip);
+
+        void set_viewport(const glm::vec4 &viewport);
+
+        const glm::vec4 &get_viewport() const { return _viewport; }
+
+        void set_clear_color(const glm::vec4 &color);
+
+        const glm::vec4 &get_clear_color() const { return _clear_color; }
+
+        void set_clear_flags(uint16_t flags);
+
+        uint16_t get_clear_flags() const { return _clear_flags; }
+
+        bgfx::ViewId render_reset(bgfx::ViewId view_id);
+
+        void render() const;
+
+        void add_component(std::unique_ptr<ICameraComponent> &&component);
+
+        ICameraComponent *get_component(size_t type_hash);
+
+        bool remove_component(size_t type_hash);
+
+        void set_culling_filter(std::unique_ptr<ICullingFilter> &&filter);
+
+        const ICullingFilter *get_culling_filter() const;
+
+        glm::vec3 screen_to_world_point(const glm::vec2 &screen_pos, float depth) const;
+
+        glm::vec2 world_to_screen_point(const glm::vec3 &world_pos) const;
+
+        glm::vec3 screen_to_viewport_point(const glm::vec2 &screen_pos) const;
+
+        glm::vec2 viewport_to_screen_point(const glm::vec3 &viewport_pos) const;
+
+        Ray screen_point_to_ray(const glm::vec2 &screen_pos) const;
+
+        Entity get_entity() const {
+            return _entity;
+        }
+
+        void set_entity(Entity entity) {
+            _entity = entity;
+        }
+
+    private:
+        void update_matrices() const;
+
+        Camera &_camera;
+        Scene *_scene{nullptr};
+        App *_app{nullptr};
+        Entity _entity{};
+
+        ProjectionType _projection_type{ProjectionType::Perspective};
+        float _fov{60.0f};
+        float _near_clip{0.1f};
+        float _far_clip{1000.0f};
+        glm::vec2 _ortho_size{10.0f, 10.0f};
+
+        glm::vec4 _viewport{0.0f, 0.0f, 1.0f, 1.0f};
+        glm::vec4 _clear_color{0.2f, 0.2f, 0.2f, 1.0f};
+        uint16_t _clear_flags{BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH};
+
+        std::vector<std::unique_ptr<ICameraComponent> > _components;
+
+        std::unique_ptr<ICullingFilter> _culling_filter;
+
+        mutable bool _matrices_dirty{true};
+        mutable glm::mat4 _view_matrix{1.0f};
+        mutable glm::mat4 _projection_matrix{1.0f};
+
+        bgfx::ViewId _view_id{0};
+    };
+
     class STAR_EXPORT Camera {
     public:
         Camera();
 
         ~Camera();
-
-        void init(Scene &scene, App &app);
 
         void shutdown();
 
@@ -101,7 +198,11 @@ namespace star {
 
         bgfx::ViewId render_reset(bgfx::ViewId view_id);
 
-        void render();
+        CameraImpl *get_impl() const {
+            return _impl.get();
+        }
+
+        void render() const;
 
         template<typename T, typename... Args>
         T &add_component(Args &&... args) {
@@ -140,12 +241,9 @@ namespace star {
 
         glm::vec2 viewport_to_screen_point(const glm::vec3 &viewport_pos) const;
 
-        struct Ray {
-            glm::vec3 origin;
-            glm::vec3 direction;
-        };
-
         Ray screen_point_to_ray(const glm::vec2 &screen_pos) const;
+
+        Entity get_entity();
 
     private:
         void add_component_impl(std::unique_ptr<ICameraComponent> &&component);
@@ -156,7 +254,7 @@ namespace star {
 
         Camera &set_culling_filter_impl(std::unique_ptr<ICullingFilter> &&filter);
 
-        class CameraImpl;
         std::unique_ptr<CameraImpl> _impl;
+        Entity _entity;
     };
 }

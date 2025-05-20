@@ -1,14 +1,9 @@
-// This is required by BGFX for vertex/fragment shader communication
-// Defines attribute and varying types and names
-
-// Vertex attributes
 vec3 a_position    : POSITION;
 vec3 a_normal      : NORMAL;
 vec2 a_texcoord0   : TEXCOORD0;
 vec4 a_color0      : COLOR0;
 vec4 a_tangent     : TANGENT;
 
-// Varying (vertex to fragment)
 vec3 v_position    : TEXCOORD1;
 vec3 v_normal      : NORMAL;
 vec2 v_texcoord0   : TEXCOORD0;

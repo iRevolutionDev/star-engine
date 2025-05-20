@@ -1,7 +1,6 @@
 #pragma once
 
 #include "star/export.hpp"
-#include "star/scene/entity.hpp"
 #include "star/render/mesh.hpp"
 #include "star/render/material.hpp"
 #include <memory>

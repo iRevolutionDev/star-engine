@@ -72,4 +72,49 @@ namespace star {
         class WindowImpl;
         std::unique_ptr<WindowImpl> _impl;
     };
+
+    class Window::WindowImpl {
+    public:
+        WindowImpl();
+
+        ~WindowImpl();
+
+        bool init(const VideoMode &mode);
+
+        void shutdown();
+
+        bool is_open() const;
+
+        bool is_focused() const;
+
+        void set_title(const std::string &title);
+
+        std::string get_title() const;
+
+        void set_size(const glm::uvec2 &size);
+
+        glm::uvec2 get_size() const;
+
+        void set_position(const glm::ivec2 &position);
+
+        glm::ivec2 get_position() const;
+
+        void set_video_mode(const VideoMode &mode);
+
+        const VideoMode &get_video_mode() const;
+
+        static glm::vec2 get_content_scale();
+
+        SDL_Window *get_native_handle() const;
+
+        void *get_native_display() const;
+
+        void process_events();
+
+    private:
+        SDL_Window *_window{nullptr};
+        VideoMode _video_mode;
+        std::string _title{"Star Engine"};
+        bool _is_focused{false};
+    };
 }

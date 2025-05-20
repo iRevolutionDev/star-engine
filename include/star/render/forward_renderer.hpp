@@ -12,7 +12,7 @@ namespace star {
     class Light;
 
     struct RenderItem {
-        Entity entity{Entity::INVALID_ID};
+        Entity entity{};
         Mesh *mesh{nullptr};
         Material *material{nullptr};
         glm::mat4 model_matrix{1.0f};
@@ -81,7 +81,7 @@ namespace star {
 
         ~ForwardRendererComponent();
 
-        void init(Camera &camera, Scene &scene, App &app) override;
+        void init(Camera &camera, Scene &scene, App &app);
 
         void shutdown() override;
 
