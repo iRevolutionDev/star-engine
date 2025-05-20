@@ -46,7 +46,9 @@ namespace star {
         _running = true;
 
         while (_running) {
-            const float delta_time = update_time_passed();
+            const auto current_time = std::chrono::high_resolution_clock::now();
+            const auto delta_time = std::chrono::duration<float>(current_time - _last_update).count();
+            _last_update = current_time;
 
             process_events();
 
