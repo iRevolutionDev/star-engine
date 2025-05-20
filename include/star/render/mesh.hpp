@@ -54,7 +54,7 @@ namespace star {
 
         static Mesh create_plane(float width = 1.0f, float height = 1.0f);
 
-        void draw(bgfx::Encoder *encoder) const;
+        bool draw(bgfx::Encoder *encoder) const;
 
         bool is_valid() const;
 

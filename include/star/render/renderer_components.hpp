@@ -32,6 +32,8 @@ namespace star {
 
         uint32_t generate_sort_key() const;
 
+        bool render(bgfx::Encoder *encoder);
+
     private:
         std::shared_ptr<Mesh> _mesh;
         std::shared_ptr<Material> _material;

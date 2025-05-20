@@ -36,8 +36,17 @@ namespace star {
     }
 
     void ForwardRenderer::render(const bgfx::ViewId view_id, bgfx::Encoder *encoder) {
-        if (!_visible || !_scene || !_camera || !_camera->is_valid() || !_camera->is_enabled()) {
-            return;
+        auto entities = _scene->get_registry().view<MeshRenderer>();
+        for (auto entity: entities) {
+            auto &mesh_renderer = entities.get<MeshRenderer>(entity);
+
+            if (!mesh_renderer.is_visible()) {
+                continue;
+            }
+
+            if (!mesh_renderer.render(encoder)) {
+                continue;
+            }
         }
     }
 
@@ -66,10 +75,16 @@ namespace star {
     }
 
     void ForwardRendererComponent::render() {
-        if (!_renderer || !_camera) return;
-        _renderer->set_camera(_camera.value());
+        if (!_scene || !_camera || !_camera->is_valid() || !_camera->is_enabled()) {
+            return;
+        }
 
-        _renderer->render(_view_id);
+        const auto view_id = _view_id.value();
+        auto &encoder = *bgfx::begin();
+
+        _renderer->render(view_id, &encoder);
+
+        bgfx::end(&encoder);
     }
 
     bgfx::ViewId ForwardRendererComponent::render_reset(const bgfx::ViewId view_id) {

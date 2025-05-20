@@ -11,16 +11,6 @@ namespace star {
     class Material;
     class Light;
 
-    struct RenderItem {
-        Entity entity{};
-        Mesh *mesh{nullptr};
-        Material *material{nullptr};
-        glm::mat4 model_matrix{1.0f};
-        glm::mat4 normal_matrix{1.0f};
-        float distance{0.0f};
-        uint32_t sort_key{0};
-    };
-
     class STAR_EXPORT ForwardRenderer final : public Renderer {
     public:
         ForwardRenderer();
@@ -62,6 +52,6 @@ namespace star {
         OptionalRef<Camera> _camera;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
-        uint16_t _view_id;
+        std::optional<bgfx::ViewId> _view_id;
     };
 }

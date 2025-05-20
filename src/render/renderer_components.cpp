@@ -55,6 +55,14 @@ namespace star {
         return layer_key | material_key;
     }
 
+    bool MeshRenderer::render(bgfx::Encoder *encoder) {
+        if (!_visible) {
+            return false;
+        }
+
+        return _mesh->draw(encoder);
+    }
+
     Light::Light() = default;
 
     Light::~Light() = default;

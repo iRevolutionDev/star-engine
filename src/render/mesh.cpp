@@ -325,14 +325,16 @@ namespace star {
         return mesh;
     }
 
-    void Mesh::draw(bgfx::Encoder *encoder) const {
-        if (!is_valid()) return;
+    bool Mesh::draw(bgfx::Encoder *encoder) const {
+        if (!is_valid()) return false;
 
         encoder->setVertexBuffer(0, _vbh);
 
         if (bgfx::isValid(_ibh)) {
             encoder->setIndexBuffer(_ibh);
         }
+
+        return true;
     }
 
     bool Mesh::is_valid() const {
