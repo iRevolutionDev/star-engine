@@ -63,7 +63,7 @@ namespace star {
         return 0;
     }
 
-    bool AppImpl::initialize(const CmdArgs &args) {
+    bool AppImpl::initialize(const CmdArgs &args) const {
         if (!_window->init(_video_mode)) {
             spdlog::error("Failed to initialize window");
             return false;
@@ -203,6 +203,7 @@ namespace star {
 
         SDL_Window *window = _window->get_native_handle();
 
+        // TODO: MOVE IT FOR PLATFORM SPECIFIC ABSTRACTION
 #if defined(STAR_PLATFORM_WINDOWS)
         const auto hwnd = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(window),
                                                                    SDL_PROP_WINDOW_WIN32_HWND_POINTER,
@@ -227,6 +228,10 @@ namespace star {
 #endif
 
         init.platformData = platform_data;
+        init.debug = _debug_flags;
+        init.resolution.width = _render_size.x;
+        init.resolution.height = _render_size.y;
+        init.resolution.reset = _reset_flags;
 
         if (!bgfx::init(init)) {
             spdlog::error("Failed to initialize bgfx");
@@ -235,31 +240,22 @@ namespace star {
 
         bgfx::setDebug(_debug_flags);
 
+        const auto clear_hex = static_cast<uint32_t>(_clear_color.r * 255) << 24 |
+                               static_cast<uint32_t>(_clear_color.g * 255) << 16 |
+                               static_cast<uint32_t>(_clear_color.b * 255) << 8 |
+                               static_cast<uint32_t>(_clear_color.a * 255);
+
+        bgfx::setPaletteColor(0, 0xFF000000);
+        bgfx::setPaletteColor(1, clear_hex);
+        bgfx::setPaletteColor(2, 0xFFFFFFFF);
+
         bgfx::setViewClear(0,
                            BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH,
-                           static_cast<uint32_t>(_clear_color.r * 255) << 24 |
-                           static_cast<uint32_t>(_clear_color.g * 255) << 16 |
-                           static_cast<uint32_t>(_clear_color.b * 255) << 8 |
-                           static_cast<uint32_t>(_clear_color.a * 255),
+                           clear_hex,
                            1.0f, 0);
 
         const auto size = _window->get_size();
         bgfx::setViewRect(0, 0, 0, size.x, size.y);
-    }
-
-    float AppImpl::update_time_passed() const {
-        const auto now = bx::getHPCounter();
-
-        if (_last_update == 0) {
-            return 0.0f;
-        }
-
-        auto delta_time = static_cast<float>(static_cast<double>(now - _last_update) / static_cast<double>(
-                                                 bx::getHPFrequency()));
-
-        delta_time = std::min(delta_time, _update_config.max_frame_time);
-
-        return delta_time;
     }
 
     void AppImpl::request_render_reset() {

@@ -139,7 +139,7 @@ namespace star {
         using Components = std::vector<std::shared_ptr<IAppComponent> >;
         using Updaters = std::vector<std::unique_ptr<IAppUpdater> >;
 
-        bool initialize(const CmdArgs &args);
+        bool initialize(const CmdArgs &args) const;
 
         void shutdown();
 
@@ -150,8 +150,6 @@ namespace star {
         void process_events();
 
         void render_reset();
-
-        float update_time_passed() const;
 
         void bgfx_init() const;
 
@@ -170,7 +168,7 @@ namespace star {
         bgfx::RendererType::Enum _renderer_type{bgfx::RendererType::Count};
         uint32_t _active_reset_flags{0};
         glm::vec4 _clear_color{0.3f, 0.3f, 0.3f, 1.0f};
-        uint64_t _last_update{0};
+        std::chrono::steady_clock::time_point _last_update{};
         AppUpdateConfig _update_config;
         std::unique_ptr<IAppDelegate> _delegate;
         Components _components;
@@ -232,7 +230,7 @@ namespace star {
         }
 
         template<typename T>
-        bool remove_component() {
+        bool remove_component() const {
             return remove_component_impl(typeid(T).hash_code());
         }
 
