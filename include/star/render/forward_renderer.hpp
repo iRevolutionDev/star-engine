@@ -1,9 +1,7 @@
 #pragma once
 
 #include "star/export.hpp"
-#include "star/render/renderer.hpp"\
-#include <memory>
-
+#include "star/render/renderer.hpp"
 #include "star/utils/memory/optional_ref.hpp"
 
 namespace star {

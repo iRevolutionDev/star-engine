@@ -77,13 +77,14 @@
 #include <random>
 #include <numeric>
 #include <regex>
+#include <ranges>
 
 // BGFX
 #include <bgfx/bgfx.h>
+#include <bgfx/embedded_shader.h>
 #include <bgfx/platform.h>
 #include <bx/bx.h>
 #include <bx/math.h>
-#include <bgfx/embedded_shader.h>
 #include <bx/timer.h>
 
 // SDL3
