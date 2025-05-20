@@ -128,12 +128,17 @@ namespace star {
         Ray screen_point_to_ray(const glm::vec2 &screen_pos) const;
 
         Entity get_entity() const {
+            if (_entity == entt::null) {
+                throw std::runtime_error("Camera entity is not set");
+            }
             return _entity;
         }
 
         void set_entity(Entity entity) {
             _entity = entity;
         }
+
+        void configure_view(bgfx::ViewId view_id, const std::string &name) const;
 
     private:
         void update_matrices() const;
@@ -244,6 +249,8 @@ namespace star {
         Ray screen_point_to_ray(const glm::vec2 &screen_pos) const;
 
         Entity get_entity();
+
+        void configure_view(bgfx::ViewId view_id, const std::string &name) const;
 
     private:
         void add_component_impl(std::unique_ptr<ICameraComponent> &&component);

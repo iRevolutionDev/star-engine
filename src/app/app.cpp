@@ -72,7 +72,7 @@ namespace star {
         bgfx_init();
 
         _running = true;
-        _render_reset = true;
+        request_render_reset();
 
         for (const auto &component: _components) {
             component->init(_app);
@@ -92,12 +92,16 @@ namespace star {
 
         _running = false;
 
-        if (_delegate) {
-            _delegate->shutdown();
-        }
-
         for (auto it = _components.rbegin(); it != _components.rend(); ++it) {
             (*it)->shutdown();
+        }
+
+        _components.clear();
+        _updaters.clear();
+
+        if (_delegate) {
+            _delegate->shutdown();
+            _delegate.reset();
         }
 
         bgfx::shutdown();

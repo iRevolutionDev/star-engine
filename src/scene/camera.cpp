@@ -256,6 +256,18 @@ namespace star {
         return ray;
     }
 
+    void CameraImpl::configure_view(bgfx::ViewId view_id, const std::string &name) const {
+        bgfx::setViewName(view_id, name.c_str());
+        bgfx::setViewFrameBuffer(view_id, BGFX_INVALID_HANDLE);
+        bgfx::setViewMode(view_id, bgfx::ViewMode::Sequential);
+        bgfx::setViewClear(view_id, _clear_flags,
+                           static_cast<uint32_t>(_clear_color.r * 255) << 24 |
+                           static_cast<uint32_t>(_clear_color.g * 255) << 16 |
+                           static_cast<uint32_t>(_clear_color.b * 255) << 8 |
+                           static_cast<uint32_t>(_clear_color.a * 255),
+                           1.0f, 0);
+    }
+
     void CameraImpl::update_matrices() const {
         if (!_matrices_dirty) return;
 
@@ -418,6 +430,10 @@ namespace star {
 
     Entity Camera::get_entity() {
         return _impl->get_entity();
+    }
+
+    void Camera::configure_view(bgfx::ViewId view_id, const std::string &name) const {
+        _impl->configure_view(view_id, name);
     }
 
     bool Culling2D::is_visible(const glm::vec3 &position, float radius) const {

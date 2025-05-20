@@ -63,7 +63,7 @@ namespace star {
 
         void render_scene(bgfx::Encoder *encoder);
 
-        void render_mesh(RenderItem &item, bgfx::Encoder *encoder);
+        void render_mesh(RenderItem &item, bgfx::Encoder *encoder) const;
 
         std::vector<RenderItem> _render_items;
         std::vector<Entity> _light_entities;

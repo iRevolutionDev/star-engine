@@ -29,6 +29,23 @@ namespace star {
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr) {
             itr->get_impl()->init(_scene, app);
         }
+
+        _registry.on_construct<Camera>().connect<&SceneImpl::on_camera_constructed>(*this);
+        _registry.on_destroy<Camera>().connect<&SceneImpl::on_camera_destroyed>(*this);
+    }
+
+    void SceneImpl::on_camera_constructed(EntityRegistry &registry, const Entity entity) const {
+        if (_app) {
+            const auto &cam = registry.get<Camera>(entity);
+            cam.get_impl()->init(_scene, *_app);
+        }
+    }
+
+    void SceneImpl::on_camera_destroyed(EntityRegistry &registry, const Entity entity) const {
+        if (_app) {
+            const auto &cam = registry.get<Camera>(entity);
+            cam.get_impl()->shutdown();
+        }
     }
 
     void SceneImpl::shutdown() {
@@ -43,12 +60,19 @@ namespace star {
         _app = nullptr;
     }
 
-    void SceneImpl::update(float delta_time) {
+    void SceneImpl::render() {
+        auto &cams = _registry.storage<Camera>();
+        for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr) {
+            itr->get_impl()->render();
+        }
+    }
+
+    void SceneImpl::update(const float delta_time) const {
         if (_paused) {
             return;
         }
 
-        for (auto &component: _components) {
+        for (const auto &component: _components) {
             component->update(delta_time);
         }
 
@@ -186,7 +210,11 @@ namespace star {
         _impl->shutdown();
     }
 
-    void Scene::update(float delta_time) {
+    void Scene::render() const {
+        _impl->render();
+    }
+
+    void Scene::update(const float delta_time) const {
         _impl->update(delta_time);
     }
 
@@ -256,6 +284,16 @@ namespace star {
         _app = &app;
         _scene->init(app);
         _scene->set_delegate(this);
+    }
+
+    void SceneAppComponent::render() {
+        _scene->render();
+    }
+
+    void SceneAppComponent::update(float delta_time) {
+        if (_auto_update) {
+            _scene->update(delta_time);
+        }
     }
 
     void SceneAppComponent::shutdown() {

@@ -23,6 +23,9 @@ namespace star {
         virtual void shutdown() {
         }
 
+        virtual void render(Scene &scene, App &app) {
+        }
+
         virtual void update(float delta_time) {
         }
 
@@ -60,9 +63,9 @@ namespace star {
 
         bool is_debug_enabled() const;
 
-        void set_camera(Entity camera_entity);
+        void set_camera(Camera *camera);
 
-        Entity get_camera() const;
+        Camera *get_camera() const;
 
         virtual void on_window_resize(uint32_t width, uint32_t height) {
         }
@@ -70,9 +73,9 @@ namespace star {
     protected:
         Scene *_scene{nullptr};
         App *_app{nullptr};
-        Entity _camera_entity{};
+        Camera *_camera{nullptr};
         bool _visible{true};
         bool _debug_enabled{false};
-        bgfx::ViewId _view_id{0};
+        std::optional<bgfx::ViewId> _view_id;
     };
 }

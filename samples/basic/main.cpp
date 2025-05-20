@@ -20,9 +20,11 @@ public:
     }
 
     void init() override {
-        _app.get_window().set_title("Star Engine Basic Sample");
+        _app.get_window().set_title("Star Engine - Basic Sample");
 
         _app.set_debug_flag(BGFX_DEBUG_TEXT);
+        _app.set_debug_flag(BGFX_DEBUG_STATS, true);
+        // _app.set_debug_flag(BGFX_DEBUG_IFH, true);
 
         _scene_component = &_app.add_component<SceneAppComponent>();
         _scene = _scene_component->get_scene();

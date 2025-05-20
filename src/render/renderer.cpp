@@ -56,11 +56,11 @@ namespace star {
         return _debug_enabled;
     }
 
-    void Renderer::set_camera(Entity camera_entity) {
-        _camera_entity = camera_entity;
+    void Renderer::set_camera(Camera *camera) {
+        _camera = camera;
     }
 
-    Entity Renderer::get_camera() const {
-        return _camera_entity;
+    Camera *Renderer::get_camera() const {
+        return _camera;
     }
 }

@@ -57,8 +57,6 @@ namespace star {
             return;
         }
 
-        bgfx::ViewId currentViewId = (view_id != UINT16_MAX) ? view_id : _view_id;
-
         bgfx::Encoder *enc = encoder;
         bool created_encoder = false;
         if (enc == nullptr) {
@@ -129,13 +127,15 @@ namespace star {
             item.model_matrix = transform.get_model_matrix();
             item.normal_matrix = glm::transpose(glm::inverse(glm::mat3(item.model_matrix)));
             item.sort_key = mesh_renderer.generate_sort_key();
-            if (_camera_entity != entt::null && _scene->get_registry().valid(_camera_entity)) {
-                if (const auto *camera_transform = _scene->get_registry().try_get<Transform>(_camera_entity)) {
-                    const glm::vec3 camera_pos = camera_transform->get_position();
-                    const glm::vec3 object_pos = transform.get_position();
-                    item.distance = glm::distance(camera_pos, object_pos);
-                }
-            }
+
+            // if (auto camera_entity = _camera->get_entity();
+            //     camera_entity != entt::null && _scene->get_registry().valid(camera_entity)) {
+            //     if (const auto *camera_transform = _scene->get_registry().try_get<Transform>(camera_entity)) {
+            //         const glm::vec3 camera_pos = camera_transform->get_position();
+            //         const glm::vec3 object_pos = transform.get_position();
+            //         item.distance = glm::distance(camera_pos, object_pos);
+            //     }
+            // }
 
             _render_items.push_back(item);
         }
@@ -178,10 +178,10 @@ namespace star {
         }
     }
 
-    void ForwardRenderer::render_mesh(RenderItem &item, bgfx::Encoder *encoder) {
+    void ForwardRenderer::render_mesh(RenderItem &item, bgfx::Encoder *encoder) const {
         if (!item.mesh || !item.material) return;
         bgfx::setTransform(&item.model_matrix[0][0]);
-        item.material->bind(encoder, _view_id);
+        item.material->bind(encoder, _view_id.value());
         item.mesh->draw(encoder);
     }
 
@@ -211,7 +211,7 @@ namespace star {
 
     void ForwardRendererComponent::render() {
         if (!_renderer || !_camera) return;
-        _renderer->set_camera(_camera->get_entity());
+        _renderer->set_camera(_camera);
 
         _renderer->render(_view_id);
     }

@@ -69,7 +69,9 @@ namespace star {
 
         void shutdown();
 
-        void update(float delta_time);
+        void render();
+
+        void update(float delta_time) const;
 
         bgfx::ViewId render_reset(bgfx::ViewId view_id);
 
@@ -108,6 +110,10 @@ namespace star {
         std::string to_string() const;
 
     private:
+        void on_camera_constructed(EntityRegistry &registry, Entity entity) const;
+
+        void on_camera_destroyed(EntityRegistry &registry, Entity entity) const;
+
         Scene &_scene;
         App *_app{nullptr};
         std::string _name;
@@ -128,7 +134,9 @@ namespace star {
 
         void shutdown();
 
-        void update(float delta_time);
+        void render() const;
+
+        void update(float delta_time) const;
 
         bgfx::ViewId render_reset(bgfx::ViewId view_id);
 
@@ -208,6 +216,10 @@ namespace star {
         ~SceneAppComponent() override;
 
         void init(App &app) override;
+
+        void render() override;
+
+        void update(float delta_time) override;
 
         void shutdown() override;
 
