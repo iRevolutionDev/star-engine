@@ -113,43 +113,49 @@ namespace star {
         }
     }
 
-    void AppImpl::update_frame(float delta_time) {
+    void AppImpl::update_frame(const float delta_time) {
         if (_delegate) {
             _delegate->update(delta_time);
         }
 
-        for (const auto &updater: _updaters) {
-            updater->update(delta_time);
+        for (const auto &component: Components(_components)) {
+            component->update(delta_time);
         }
 
         for (auto &updater: _updater_refs) {
             updater.get().update(delta_time);
         }
+
+        const auto &size = _window->get_size();
+        const auto &video_mode = _window->get_video_mode();
+        if (_render_size != size || _video_mode != video_mode || _active_reset_flags != _reset_flags) {
+            _render_size = size;
+            _video_mode = video_mode;
+            _active_reset_flags = _reset_flags;
+            request_render_reset();
+        }
+
+        if (_render_reset) {
+            _render_reset = false;
+            render_reset();
+        }
     }
 
     void AppImpl::render_frame() {
-        if (_render_reset) {
-            render_reset();
-            _render_reset = false;
-        }
-
         if (_delegate) {
             _delegate->pre_render();
         }
 
-        bgfx::setViewClear(0,
-                           BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH,
-                           static_cast<uint32_t>(_clear_color.r * 255) << 24 |
-                           static_cast<uint32_t>(_clear_color.g * 255) << 16 |
-                           static_cast<uint32_t>(_clear_color.b * 255) << 8 |
-                           static_cast<uint32_t>(_clear_color.a * 255),
-                           1.0f, 0);
-
-        bgfx::setViewRect(0, 0, 0,
-                          static_cast<uint16_t>(_window->get_size().x),
-                          static_cast<uint16_t>(_window->get_size().y));
-
         bgfx::touch(0);
+        bgfx::dbgTextClear();
+
+        if (_delegate) {
+            _delegate->render();
+        }
+
+        for (const auto &component: Components(_components)) {
+            component->render();
+        }
 
         if (_delegate) {
             _delegate->post_render();
@@ -159,17 +165,32 @@ namespace star {
     }
 
     void AppImpl::render_reset() {
-        uint32_t reset_flags = BGFX_RESET_VSYNC;
-        if (_video_mode.vsync) {
-            reset_flags |= BGFX_RESET_VSYNC;
+        const auto size = _window->get_size();
+        bgfx::reset(size.x, size.y, _active_reset_flags);
+
+        const auto numViews = bgfx::getCaps()->limits.maxViews;
+        for (bgfx::ViewId i = 0; i < numViews; ++i) {
+            bgfx::resetView(i);
         }
 
-        reset_flags |= _reset_flags;
+        bgfx::ViewId id = 0;
 
-        const auto size = _window->get_size();
-        bgfx::reset(size.x, size.y, reset_flags);
+        bgfx::setViewName(id, "App clear");
+        bgfx::setViewRect(id, 0, 0, bgfx::BackbufferRatio::Equal);
+        constexpr uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL;
+        static constexpr uint8_t clearColor = 1;
+        bgfx::setViewClear(id, clearFlags, 1.F, 0U,
+                           clearColor, clearColor, clearColor, clearColor,
+                           clearColor, clearColor, clearColor, clearColor);
+        ++id;
 
-        _active_reset_flags = reset_flags;
+        if (_delegate) {
+            id = _delegate->render_reset(id);
+        }
+
+        for (const auto &component: Components(_components)) {
+            id = component->render_reset(id);
+        }
     }
 
     void AppImpl::bgfx_init() const {

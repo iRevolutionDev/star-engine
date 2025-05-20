@@ -43,6 +43,11 @@ namespace star {
 
         virtual void post_render() {
         }
+
+        virtual void render() const {
+        }
+
+        virtual bgfx::ViewId render_reset(const bgfx::ViewId viewId) { return viewId; }
     };
 
     class STAR_EXPORT IAppDelegateFactory {
@@ -57,7 +62,9 @@ namespace star {
         virtual ~IAppUpdater() = default;
 
         virtual void update(float delta_time) = 0;
-    };    template<typename T>
+    };
+
+    template<typename T>
     class STAR_EXPORT ITypeAppUpdater : public IAppUpdater {
     public:
         static constexpr auto type_name() { return typeid(T).name(); }
@@ -69,54 +76,88 @@ namespace star {
 
     class STAR_EXPORT AppImpl final : public ITypeKeyboardListener<AppImpl> {
     public:
-        explicit AppImpl(App& app);
+        explicit AppImpl(App &app);
+
         ~AppImpl() override;
 
-        int32_t run(const CmdArgs& args);
+        int32_t run(const CmdArgs &args);
+
         void request_render_reset();
+
         void request_renderer_type(bgfx::RendererType::Enum renderer);
+
         void request_quit();
+
         bool is_running() const;
+
         void set_debug_flag(uint32_t flag, bool enabled);
+
         bool get_debug_flag(uint32_t flag) const;
+
         void set_paused(bool paused);
+
         bool is_paused() const;
-        void set_update_config(const AppUpdateConfig& config);
-        const AppUpdateConfig& get_update_config() const;
-        void set_clear_color(const glm::vec4& color);
-        const glm::vec4& get_clear_color() const;
-        void add_component(std::shared_ptr<IAppComponent>&& component);
+
+        void set_update_config(const AppUpdateConfig &config);
+
+        const AppUpdateConfig &get_update_config() const;
+
+        void set_clear_color(const glm::vec4 &color);
+
+        const glm::vec4 &get_clear_color() const;
+
+        void add_component(std::shared_ptr<IAppComponent> &&component);
+
         bool remove_component(size_t type_hash);
+
         bool has_component(size_t type_hash) const;
-        IAppComponent* get_component(size_t type_hash);
-        const IAppComponent* get_component(size_t type_hash) const;
+
+        IAppComponent *get_component(size_t type_hash);
+
+        const IAppComponent *get_component(size_t type_hash) const;
+
         void set_delegate(std::unique_ptr<IAppDelegate> delegate);
-        Input& get_input();
-        const Input& get_input() const;
-        Window& get_window();
-        const Window& get_window() const;
-        void add_updater(std::unique_ptr<IAppUpdater>&& updater);
-        void add_updater(IAppUpdater& updater);
+
+        Input &get_input();
+
+        const Input &get_input() const;
+
+        Window &get_window();
+
+        const Window &get_window() const;
+
+        void add_updater(std::unique_ptr<IAppUpdater> &&updater);
+
+        void add_updater(IAppUpdater &updater);
+
         bool remove_updater(size_t type_hash);
 
     protected:
-        void on_keyboard_key(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
+        void on_keyboard_key(KeyboardKey key, const KeyboardModifiers &modifiers, bool down) override;
 
     private:
-        using Components = std::vector<std::shared_ptr<IAppComponent>>;
-        using Updaters = std::vector<std::unique_ptr<IAppUpdater>>;
+        using Components = std::vector<std::shared_ptr<IAppComponent> >;
+        using Updaters = std::vector<std::unique_ptr<IAppUpdater> >;
 
-        bool initialize(const CmdArgs& args);
+        bool initialize(const CmdArgs &args);
+
         void shutdown();
-        void render_frame();
-        void update_frame(float delta_time);
-        void process_events();
-        void render_reset();
-        float update_time_passed() const;
-        void bgfx_init() const;
-        void handle_debug_shortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
 
-        App& _app;
+        void render_frame();
+
+        void update_frame(float delta_time);
+
+        void process_events();
+
+        void render_reset();
+
+        float update_time_passed() const;
+
+        void bgfx_init() const;
+
+        void handle_debug_shortcuts(KeyboardKey key, const KeyboardModifiers &modifiers);
+
+        App &_app;
         std::unique_ptr<Window> _window;
         std::unique_ptr<Input> _input;
         bool _running{false};
@@ -128,13 +169,13 @@ namespace star {
         uint32_t _reset_flags{0};
         bgfx::RendererType::Enum _renderer_type{bgfx::RendererType::Count};
         uint32_t _active_reset_flags{0};
-        glm::vec4 _clear_color{0.0f, 0.0f, 0.0f, 1.0f};
+        glm::vec4 _clear_color{0.3f, 0.3f, 0.3f, 1.0f};
         uint64_t _last_update{0};
         AppUpdateConfig _update_config;
         std::unique_ptr<IAppDelegate> _delegate;
         Components _components;
         Updaters _updaters;
-        std::vector<std::reference_wrapper<IAppUpdater>> _updater_refs;
+        std::vector<std::reference_wrapper<IAppUpdater> > _updater_refs;
     };
 
     class STAR_EXPORT App {
