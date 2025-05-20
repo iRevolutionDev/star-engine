@@ -76,6 +76,7 @@
 #include <limits>
 #include <random>
 #include <numeric>
+#include <regex>
 
 // BGFX
 #include <bgfx/bgfx.h>
