@@ -139,7 +139,7 @@ namespace star {
         using Components = std::vector<std::shared_ptr<IAppComponent> >;
         using Updaters = std::vector<std::unique_ptr<IAppUpdater> >;
 
-        bool initialize(const CmdArgs &args) const;
+        bool initialize(const CmdArgs &args);
 
         void shutdown();
 

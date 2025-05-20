@@ -43,8 +43,6 @@ namespace star {
             return 1;
         }
 
-        _running = true;
-
         while (_running) {
             const auto current_time = std::chrono::high_resolution_clock::now();
             const auto delta_time = std::chrono::duration<float>(current_time - _last_update).count();
@@ -65,13 +63,16 @@ namespace star {
         return 0;
     }
 
-    bool AppImpl::initialize(const CmdArgs &args) const {
+    bool AppImpl::initialize(const CmdArgs &args) {
         if (!_window->init(_video_mode)) {
             spdlog::error("Failed to initialize window");
             return false;
         }
 
         bgfx_init();
+
+        _running = true;
+        _render_reset = true;
 
         for (const auto &component: _components) {
             component->init(_app);
