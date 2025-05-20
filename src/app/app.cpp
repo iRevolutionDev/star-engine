@@ -8,7 +8,7 @@
 
 namespace star {
     int32_t main(const int32_t argc, const char *argv[], std::unique_ptr<IAppDelegateFactory> &&factory) {
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD) == 0) {
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
             spdlog::error("SDL initialization failed: {}", SDL_GetError());
             return 1;
         }

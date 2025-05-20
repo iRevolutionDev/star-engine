@@ -19,6 +19,17 @@ namespace star {
         static bgfx::VertexLayout ms_layout;
     };
 
+    class STAR_EXPORT IMesh {
+    public:
+        virtual ~IMesh() = default;
+
+        virtual bool render(bgfx::Encoder &encoder) const = 0;
+
+        virtual const bgfx::VertexLayout &get_vertex_layout() const = 0;
+
+        static std::unique_ptr<IMesh> create(const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices);
+    };
+
     class STAR_EXPORT Mesh {
     public:
         Mesh();

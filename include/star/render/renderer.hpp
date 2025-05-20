@@ -6,6 +6,8 @@
 #include <bgfx/bgfx.h>
 #include <string>
 
+#include "star/utils/memory/optional_ref.hpp"
+
 namespace star {
     class App;
     class Scene;
@@ -63,17 +65,17 @@ namespace star {
 
         bool is_debug_enabled() const;
 
-        void set_camera(Camera *camera);
+        void set_camera(Camera &camera);
 
-        Camera *get_camera() const;
+        OptionalRef<Camera> get_camera() const;
 
         virtual void on_window_resize(uint32_t width, uint32_t height) {
         }
 
     protected:
-        Scene *_scene{nullptr};
-        App *_app{nullptr};
-        Camera *_camera{nullptr};
+        OptionalRef<Scene> _scene;
+        OptionalRef<App> _app;
+        OptionalRef<Camera> _camera;
         bool _visible{true};
         bool _debug_enabled{false};
         std::optional<bgfx::ViewId> _view_id;

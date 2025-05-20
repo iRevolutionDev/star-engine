@@ -18,8 +18,9 @@ namespace star {
     void Renderer::shutdown() {
         spdlog::debug("Shutting down renderer: {}", get_renderer_name());
 
-        _scene = nullptr;
-        _app = nullptr;
+        _camera.reset();
+        _scene.reset();
+        _app.reset();
     }
 
     void Renderer::update(float delta_time) {
@@ -56,11 +57,11 @@ namespace star {
         return _debug_enabled;
     }
 
-    void Renderer::set_camera(Camera *camera) {
+    void Renderer::set_camera(Camera &camera) {
         _camera = camera;
     }
 
-    Camera *Renderer::get_camera() const {
+    OptionalRef<Camera> Renderer::get_camera() const {
         return _camera;
     }
 }

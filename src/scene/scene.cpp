@@ -72,6 +72,11 @@ namespace star {
             return;
         }
 
+        for (const auto &camera: _registry.view<Camera>()) {
+            auto &cam = _registry.get<Camera>(camera);
+            cam.get_impl()->update(delta_time);
+        }
+
         for (const auto &component: _components) {
             component->update(delta_time);
         }
@@ -108,7 +113,7 @@ namespace star {
     }
 
     void SceneImpl::add_scene_component(std::unique_ptr<ISceneComponent> &&component) {
-        if (auto type_hash = component->get_scene_component_type()) {
+        if (const auto type_hash = component->get_scene_component_type()) {
             remove_scene_component(type_hash);
         }
 

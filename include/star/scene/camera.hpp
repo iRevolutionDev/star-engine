@@ -28,6 +28,9 @@ namespace star {
         virtual void render() {
         }
 
+        virtual void update(float delta_time) {
+        }
+
         virtual bgfx::ViewId render_reset(bgfx::ViewId view_id) { return view_id; }
 
         virtual void before_render_view(bgfx::ViewId view_id, bgfx::Encoder &encoder) {
@@ -73,7 +76,7 @@ namespace star {
 
     class CameraImpl {
     public:
-        CameraImpl(Camera &camera, const glm::mat4 &projection_matrix = {}) noexcept;
+        explicit CameraImpl(Camera &camera, const glm::mat4 &projection_matrix = {}) noexcept;
 
         ~CameraImpl();
 
@@ -107,9 +110,11 @@ namespace star {
 
         void render() const;
 
+        void update(float delta_time);
+
         void add_component(std::unique_ptr<ICameraComponent> &&component);
 
-        ICameraComponent *get_component(size_t type_hash);
+        ICameraComponent *get_component(size_t type_hash) const;
 
         bool remove_component(size_t type_hash);
 
@@ -140,6 +145,10 @@ namespace star {
 
         void configure_view(bgfx::ViewId view_id, const std::string &name) const;
 
+        bool is_valid() const;
+
+        bool is_enabled() const;
+
     private:
         void update_matrices() const;
 
@@ -147,6 +156,9 @@ namespace star {
         Scene *_scene{nullptr};
         App *_app{nullptr};
         Entity _entity{};
+
+        bool _enabled;
+        std::optional<bool> _update_enabled;
 
         ProjectionType _projection_type{ProjectionType::Perspective};
         float _fov{60.0f};
@@ -175,7 +187,7 @@ namespace star {
 
         ~Camera();
 
-        void shutdown();
+        void shutdown() const;
 
         glm::mat4 get_view_matrix() const;
 
@@ -251,6 +263,10 @@ namespace star {
         Entity get_entity();
 
         void configure_view(bgfx::ViewId view_id, const std::string &name) const;
+
+        bool is_valid();
+
+        bool is_enabled();
 
     private:
         void add_component_impl(std::unique_ptr<ICameraComponent> &&component);

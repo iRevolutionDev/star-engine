@@ -1,10 +1,10 @@
 #pragma once
 
 #include "star/export.hpp"
-#include "star/render/renderer.hpp"
-#include <unordered_map>
-#include <vector>
+#include "star/render/renderer.hpp"\
 #include <memory>
+
+#include "star/utils/memory/optional_ref.hpp"
 
 namespace star {
     class Mesh;
@@ -21,7 +21,7 @@ namespace star {
         uint32_t sort_key{0};
     };
 
-    class STAR_EXPORT ForwardRenderer : public Renderer {
+    class STAR_EXPORT ForwardRenderer final : public Renderer {
     public:
         ForwardRenderer();
 
@@ -31,57 +31,21 @@ namespace star {
 
         void shutdown() override;
 
-        void update(float delta_time) override;
+        void render(bgfx::ViewId view_id, bgfx::Encoder *encoder = nullptr) override;
 
         bgfx::ViewId render_reset(bgfx::ViewId view_id) override;
 
-        void render(bgfx::ViewId view_id, bgfx::Encoder *encoder = nullptr) override;
-
         RendererType get_renderer_type() const override { return RendererType::Forward; }
         std::string get_renderer_name() const override { return "ForwardRenderer"; }
-
-        void on_window_resize(uint32_t width, uint32_t height) override;
-
-        void set_wireframe(bool enabled);
-
-        bool is_wireframe() const;
-
-        void set_sort_mode(bool enabled);
-
-        bool is_sort_mode() const;
-
-        void set_maximum_lights(uint32_t max_lights);
-
-        uint32_t get_maximum_lights() const;
-
-    private:
-        void collect_render_items();
-
-        void collect_lights();
-
-        void sort_render_items();
-
-        void render_scene(bgfx::Encoder *encoder);
-
-        void render_mesh(RenderItem &item, bgfx::Encoder *encoder) const;
-
-        std::vector<RenderItem> _render_items;
-        std::vector<Entity> _light_entities;
-
-        bool _wireframe{false};
-        bool _sort_enabled{true};
-        uint32_t _max_lights{4};
-
-        uint32_t _debug_flags{BGFX_DEBUG_NONE};
     };
 
-    class STAR_EXPORT ForwardRendererComponent : public ITypeCameraComponent<ForwardRendererComponent> {
+    class STAR_EXPORT ForwardRendererComponent final : public ITypeCameraComponent<ForwardRendererComponent> {
     public:
         ForwardRendererComponent();
 
-        ~ForwardRendererComponent();
+        ~ForwardRendererComponent() override;
 
-        void init(Camera &camera, Scene &scene, App &app);
+        void init(Camera &camera, Scene &scene, App &app) override;
 
         void shutdown() override;
 
@@ -95,9 +59,9 @@ namespace star {
 
     private:
         std::unique_ptr<ForwardRenderer> _renderer;
-        Camera *_camera{nullptr};
-        Scene *_scene{nullptr};
-        App *_app{nullptr};
+        OptionalRef<Camera> _camera;
+        OptionalRef<Scene> _scene;
+        OptionalRef<App> _app;
         uint16_t _view_id;
     };
 }

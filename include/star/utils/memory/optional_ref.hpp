@@ -1,6 +1,6 @@
 #pragma once
 
-#include "star/core/common.hpp"
+#include <type_traits>
 
 namespace star {
     template<typename T>
@@ -29,11 +29,11 @@ namespace star {
             other.reset();
         }
 
-        explicit OptionalRef(T *value) noexcept
+        OptionalRef(T *value) noexcept
             : _value(value) {
         }
 
-        explicit OptionalRef(T &value) noexcept
+        OptionalRef(T &value) noexcept
             : _value(&value) {
         }
 

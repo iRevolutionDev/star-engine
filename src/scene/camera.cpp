@@ -11,7 +11,7 @@
 
 namespace star {
     CameraImpl::CameraImpl(Camera &camera, const glm::mat4 &projection_matrix) noexcept
-        : _camera(camera),
+        : _camera(camera), _enabled(true),
           _projection_matrix(projection_matrix) {
     }
 
@@ -121,6 +121,20 @@ namespace star {
         }
     }
 
+    void CameraImpl::update(const float delta_time) {
+        if (_update_enabled) // wait for the next update
+        {
+            _enabled = _update_enabled.value();
+            _update_enabled.reset();
+        }
+
+        for (const auto &component: _components) {
+            component->update(delta_time);
+        }
+
+        update_matrices();
+    }
+
     void CameraImpl::add_component(std::unique_ptr<ICameraComponent> &&component) {
         if (_scene && _app) {
             component->init(_camera, *_scene, *_app);
@@ -129,7 +143,7 @@ namespace star {
         _components.push_back(std::move(component));
     }
 
-    ICameraComponent *CameraImpl::get_component(size_t type_hash) {
+    ICameraComponent *CameraImpl::get_component(const size_t type_hash) const {
         for (const auto &component: _components) {
             if (component->get_camera_component_type() == type_hash) {
                 return component.get();
@@ -139,10 +153,10 @@ namespace star {
     }
 
     bool CameraImpl::remove_component(size_t type_hash) {
-        auto it = std::find_if(_components.begin(), _components.end(),
-                               [type_hash](const auto &component) {
-                                   return component->get_camera_component_type() == type_hash;
-                               });
+        const auto it = std::ranges::find_if(_components,
+                                             [type_hash](const auto &component) {
+                                                 return component->get_camera_component_type() == type_hash;
+                                             });
 
         if (it != _components.end()) {
             if (_scene && _app) {
@@ -268,6 +282,17 @@ namespace star {
                            1.0f, 0);
     }
 
+    bool CameraImpl::is_valid() const {
+        return _scene && _entity != entt::null;
+    }
+
+    bool CameraImpl::is_enabled() const {
+        if (_update_enabled) {
+            return _update_enabled.value();
+        }
+        return _enabled;
+    }
+
     void CameraImpl::update_matrices() const {
         if (!_matrices_dirty) return;
 
@@ -315,12 +340,12 @@ namespace star {
         _matrices_dirty = false;
     }
 
-    Camera::Camera() : _impl(std::make_unique<CameraImpl>(*this)) {
+    Camera::Camera() : _impl(std::make_unique<CameraImpl>(*this)), _entity(entt::null) {
     }
 
     Camera::~Camera() = default;
 
-    void Camera::shutdown() {
+    void Camera::shutdown() const {
         _impl->shutdown();
     }
 
@@ -434,6 +459,14 @@ namespace star {
 
     void Camera::configure_view(bgfx::ViewId view_id, const std::string &name) const {
         _impl->configure_view(view_id, name);
+    }
+
+    bool Camera::is_valid() {
+        return _impl->is_valid();
+    }
+
+    bool Camera::is_enabled() {
+        return _impl->is_enabled();
     }
 
     bool Culling2D::is_visible(const glm::vec3 &position, float radius) const {
