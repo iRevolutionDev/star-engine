@@ -37,6 +37,9 @@ target_include_directories(${EDITOR_NAME} PUBLIC
     "${SDL3_INCLUDE_DIR}"
     "${glm_SOURCE_DIR}"
     "${spdlog_SOURCE_DIR}"
+    "${imgui_SOURCE_DIR}"
+    "${imgui_SOURCE_DIR}/misc/freetype"
+    "${freetype_SOURCE_DIR}/include"
     "${CMAKE_BINARY_DIR}/include/generated/shaders"
 )
 
@@ -44,6 +47,11 @@ add_custom_command(TARGET ${EDITOR_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${PROJECT_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets"
 )
+
+if (MSVC AND WIN32 AND NOT MSVC_VERSION VERSION_LESS 142)
+    target_link_options(${EDITOR_NAME} PRIVATE $<$<CONFIG:Debug>:/INCREMENTAL>)
+    target_compile_options(${EDITOR_NAME} PRIVATE $<$<CONFIG:Debug>:/ZI>)
+endif ()
 
 if (WIN32)
     add_custom_command(

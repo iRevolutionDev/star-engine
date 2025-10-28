@@ -156,6 +156,8 @@ namespace star {
 
         void process_button_event(MouseButton button, bool down);
 
+        glm::vec2 get_velocity() const;
+
     private:
         std::vector<std::reference_wrapper<IMouseListener> > _listeners;
         std::unordered_map<MouseButton, bool> _button_states;
@@ -247,6 +249,16 @@ namespace star {
         }
     }
 
+    glm::vec2 Mouse::MouseImpl::get_velocity() const {
+        const auto position = get_position();
+
+        static glm::vec2 last_position = position;
+        const glm::vec2 velocity = position - last_position;
+        last_position = position;
+
+        return velocity;
+    }
+
     Mouse::Mouse() : _impl(std::make_unique<MouseImpl>()) {
     }
 
@@ -298,6 +310,10 @@ namespace star {
 
     void Mouse::process_button_event(MouseButton button, bool down) {
         _impl->process_button_event(button, down);
+    }
+
+    glm::vec2 Mouse::get_velocity() const {
+        return _impl->get_velocity();
     }
 
     class GameController::GameControllerImpl {
