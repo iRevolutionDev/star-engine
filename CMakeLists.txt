@@ -15,6 +15,8 @@ include(scripts/sdl3.cmake)
 include(scripts/spdlog.cmake)
 include(scripts/glm.cmake)
 include(scripts/entt.cmake)
+include(scripts/freetype.cmake)
+include(scripts/imgui.cmake)
 
 # Project Files
 file(GLOB_RECURSE ENGINE_SRC_FILES
@@ -98,6 +100,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${SDL3_INCLUDE_DIR}"
         "${glm_SOURCE_DIR}"
         "${spdlog_SOURCE_DIR}"
+        "${imgui_SOURCE_DIR}"
+        "${imgui_SOURCE_DIR}/misc/freetype"
+        "${freetype_SOURCE_DIR}/include"
         "${entt_SOURCE_DIR}/src"
         "${CMAKE_BINARY_DIR}/include/generated/shaders"
 )
@@ -111,6 +116,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         spdlog::spdlog
         glm::glm
         shaders
+        imgui
+        freetype
         ${CMAKE_DL_LIBS}
 )
 

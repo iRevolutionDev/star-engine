@@ -1,20 +1,8 @@
-#include "star/core/common.hpp"
+#include "editor_app.hpp"
+#include "star/app/app.hpp"
+#include <spdlog/spdlog.h>
 
-#ifdef STAR_PLATFORM_WINDOWS
-#include <Windows.h>
+using namespace star;
+using namespace star::editor;
 
-int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
-#ifdef STAR_DEBUG
-    AllocConsole();
-#endif
-
-    return 0;
-}
-
-#else
-
-int main(int argc, char** argv) {
-    return 0;
-}
-
-#endif
+STAR_RUN_APP(EditorApp);
