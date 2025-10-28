@@ -7,13 +7,11 @@
 #include <memory>
 #include <vector>
 
-namespace star::editor
-{
+namespace star::editor {
     class EditorPanel;
     class EditorContext;
 
-    class EditorApp final : public IAppDelegate, public IImguiRenderer, public IKeyboardListener
-    {
+    class EditorApp final : public IAppDelegate, public IImguiRenderer, public IKeyboardListener {
     public:
         explicit EditorApp(App &app);
 
@@ -52,11 +50,11 @@ namespace star::editor
 
         void setup_editor_camera();
 
-        void create_test_objects();
+        void create_test_objects() const;
 
         void render_main_menu_bar();
 
-        void render_dockspace();
+        static void render_dockspace();
 
         void on_keyboard_key(KeyboardKey key, const KeyboardModifiers &modifiers, bool down) override;
 
@@ -66,7 +64,7 @@ namespace star::editor
         Entity _editor_camera_entity;
 
         std::unique_ptr<EditorContext> _context;
-        std::vector<std::unique_ptr<EditorPanel>> _panels;
+        std::vector<std::unique_ptr<EditorPanel> > _panels;
 
         bool _show_demo_window = false;
         bool _show_stats = false;

@@ -9,6 +9,7 @@
 #include "star/render/forward_renderer.hpp"
 #include "star/render/scene_renderer.hpp"
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <spdlog/spdlog.h>
 
 #include "star/render/mesh.hpp"
@@ -189,7 +190,7 @@ namespace star::editor {
         camera.add_component<ForwardRendererComponent>();
     }
 
-    void EditorApp::create_test_objects() {
+    void EditorApp::create_test_objects() const {
         Vertex::init();
 
         const auto cube_entity = _active_scene->create_entity();
@@ -287,6 +288,7 @@ namespace star::editor {
     void EditorApp::render_dockspace() {
         static bool dockspace_open = true;
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+        static bool first_time = true;
 
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
         const ImGuiViewport *viewport = ImGui::GetMainViewport();
@@ -307,15 +309,38 @@ namespace star::editor {
         ImGui::PopStyleVar(3);
 
         if (const auto &io = ImGui::GetIO(); io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-            const auto dockspace_id = ImGui::GetID("MyDockSpace");
+            ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+
+            if (first_time) {
+                first_time = false;
+
+                ImGui::DockBuilderRemoveNode(dockspace_id);
+                ImGui::DockBuilderAddNode(dockspace_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
+                ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
+
+                const auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr,
+                                                                      &dockspace_id);
+                const auto dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.25f, nullptr,
+                                                                       &dockspace_id);
+                const auto dock_id_bottom = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.3f, nullptr,
+                                                                        &dockspace_id);
+
+                ImGui::DockBuilderDockWindow("Scene Hierarchy", dock_id_left);
+                ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
+                ImGui::DockBuilderDockWindow("Console", dock_id_bottom);
+                ImGui::DockBuilderDockWindow("Viewport", dockspace_id);
+
+                ImGui::DockBuilderFinish(dockspace_id);
+            }
         }
 
         ImGui::End();
     }
 
     void EditorApp::on_keyboard_key(const KeyboardKey key, const KeyboardModifiers &modifiers, const bool down) {
-        if (!down) return;
+        if (!down)
+            return;
 
         switch (key) {
             case KeyboardKey::F7:
